@@ -12,7 +12,7 @@ objects:
     - kind: Service
       apiVersion: v1
       metadata:
-        name: 'svc-${INSTANCE_NAME}'
+        name: 'svc-http-${INSTANCE_NAME}'
         creationTimestamp: null
         labels:
           name: '${INSTANCE_NAME}'
@@ -24,6 +24,24 @@ objects:
             port: 9200
             targetPort: 9200
             nodePort: 0
+        selector:
+          name: '${INSTANCE_NAME}'
+        portalIP: ''
+        type: ClusterIP
+        sessionAffinity: None
+      status:
+        loadBalancer: {}
+
+    - kind: Service
+      apiVersion: v1
+      metadata:
+        name: 'svc-transport-${INSTANCE_NAME}'
+        creationTimestamp: null
+        labels:
+          name: '${INSTANCE_NAME}'
+          role: elasticsearch
+      spec:
+        ports:
           - name: es-transport
             protocol: TCP
             port: 9300
@@ -51,7 +69,7 @@ objects:
         host: '${APPLICATION_DOMAIN}'
         to:
           kind: Service
-          name: 'svc-${INSTANCE_NAME}'
+          name: 'svc-http-${INSTANCE_NAME}'
 
   #---------------------------------------------------------------------------------
     - kind: DeploymentConfig
