@@ -41,7 +41,7 @@ objects:
     - kind: Route
       apiVersion: v1
       metadata:
-        name: 'route-${INSTANCE_NAME}'
+        name: '${INSTANCE_NAME}'
         annotations:
           description: "Route for ${INSTANCE_NAME} Elasticsearch HTTP API"
         labels:
