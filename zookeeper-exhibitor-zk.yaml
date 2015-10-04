@@ -1,0 +1,56 @@
+apiVersion: "v1"
+kind: "List"
+items:
+
+- apiVersion: "v1"
+  kind: "Service"
+  metadata:
+    labels:
+      component: "zookeeper-ex-zk"
+    name: "exhibitor-zk"
+  spec:
+    ports:
+    - port: 8181
+      targetPort: 8181
+    selector:
+      component: "zookeeper-ex-zk"
+
+- apiVersion: "v1"
+  kind: "ReplicationController"
+  metadata:
+    labels:
+      component: "zookeeper-ex-zk"
+    name: "rc-zk-zk"
+  spec:
+    replicas: 1
+    selector:
+      component: "zookeeper-ex-zk"
+    template:
+      metadata:
+        labels:
+          component: "zookeeper-ex-zk"
+      spec:
+        serviceAccount: elasticsearch
+        containers:
+          - securityContext:
+              runAsUser: 0
+            env:
+            - name: "KUBERNETES_TRUST_CERT"
+              value: "true"
+            - name: "CONFIG_TYPE"
+              value: "ZK"
+            - name: "ZK_CONFIG_PATH"
+              value: "/exhibitor/elktest/test1"
+            - name: "ZK_CONNECT"
+              value: "zookeeper-1.default.svc.cluster.local:2181,zookeeper-2.default.svc.cluster.local:2181,zookeeper-3.default.svc.cluster.local:2181"
+            - name: "CONFIG_CHECK_MS"
+              value: "50000"
+            image: "arrawatia/zookeeper-exhibitor:latest"
+            name: "zk-node"
+            ports:
+            - containerPort: 2181
+              name: "client"
+            - containerPort: 2888
+              name: "followers"
+            - containerPort: 3888
+              name: "election"
