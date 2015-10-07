@@ -1,0 +1,112 @@
+kind: Template
+apiVersion: v1
+metadata:
+  name: zookeeper-exhibitor-zk
+  creationTimestamp: null
+  annotations:
+    description: 'Zookeeper cluster using Exhibitor which coordinates using a bootstarp ZooKeeper cluster'
+    iconClass: icon-database
+    tags: 'database,zookeeper'
+objects:
+    #---------------------------------------------------------------------------------
+    - kind: Service
+      apiVersion: v1
+      metadata:
+        name: 'svc-exhibitor-${INSTANCE_NAME}'
+        creationTimestamp: null
+        labels:
+          name: '${INSTANCE_NAME}'
+          component: zookeeper
+      spec:
+        ports:
+          - name: exhibitor
+            protocol: TCP
+            port: 8181
+            targetPort: 8181
+        selector:
+          component: '${INSTANCE_NAME}'
+    #---------------------------------------------------------------------------------
+    - kind: Route
+      apiVersion: v1
+      metadata:
+        name: '${INSTANCE_NAME}'
+        annotations:
+          description: "Route for ${INSTANCE_NAME} Exhibitor HTTP API"
+        labels:
+          name: '${INSTANCE_NAME}'
+          component: zookeeper
+      spec:
+        host: '${APPLICATION_DOMAIN}'
+        to:
+          kind: Service
+          name: 'svc-exhibitor-${INSTANCE_NAME}'
+
+  #---------------------------------------------------------------------------------
+    - kind: DeploymentConfig
+      apiVersion: v1
+      metadata:
+        name: 'dc-${INSTANCE_NAME}'
+        creationTimestamp: null
+        labels:
+          name: '${INSTANCE_NAME}'
+          component: zookeeper
+      spec:
+        strategy:
+          type: Recreate
+          resources: {}
+        triggers:
+          - type: ConfigChange
+        replicas: 1
+        selector:
+          name: '${INSTANCE_NAME}'
+          component: zookeeper
+        template:
+          metadata:
+            creationTimestamp: null
+            labels:
+              name: '${INSTANCE_NAME}'
+              component: zookeeper
+          spec:
+            serviceAccount: elasticsearch
+            containers:
+              - name: zk-exhibitor
+                image: arrawatia/zookeeper-exhibitor:latest
+                securityContext:
+                  runAsUser: 0
+                ports:
+                  - name: client
+                    containerPort: 2181
+                  - name: followers
+                    containerPort: 2888
+                  - name: election
+                    containerPort: 3888
+                  - name: exhibitor
+                    containerPort: 8181
+                env:
+                  - name: KUBERNETES_TRUST_CERT
+                    value: true
+                  - name: KUBERNETES_CA_CERTIFICATE_FILE
+                    value: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
+                  - name: CONFIG_TYPE
+                    value: ZK
+                  - name: ZK_CONFIG_PATH
+                    value: /exhibitor/elktest/test1
+                  - name: ZK_CONNECT
+                    value: "zookeeper-1.default.svc.cluster.local:2181,zookeeper-2.default.svc.cluster.local:2181,zookeeper-3.default.svc.cluster.local:2181"
+                  - name: CONFIG_CHECK_MS
+                    value: 50000
+                imagePullPolicy: Always
+                securityContext:
+                  privileged: false
+            restartPolicy: Always
+            dnsPolicy: ClusterFirst
+    
+parameters:
+  - name: INSTANCE_NAME
+    description: Application instance name
+    required: true
+  - name: APPLICATION_DOMAIN
+    description: "The exposed hostname that will route to the ZK cluster, if left blank a value will be defaulted."
+    value: ""
+labels:
+  template: zookeeper-exhibitor-zk
