@@ -2,7 +2,6 @@ kind: Template
 apiVersion: v1
 metadata:
   name: elasticsearch-ephemeral
-  creationTimestamp: null
   annotations:
     description: 'Elasticsearch database service, without persistent storage. WARNING: Any data stored will be lost upon pod destruction. Only use this template for testing'
     iconClass: icon-database
@@ -13,7 +12,6 @@ objects:
       apiVersion: v1
       metadata:
         name: 'svc-http-${INSTANCE_NAME}'
-        creationTimestamp: null
         labels:
           name: '${INSTANCE_NAME}'
           component: elasticsearch
@@ -29,7 +27,6 @@ objects:
       apiVersion: v1
       metadata:
         name: 'svc-transport-${INSTANCE_NAME}'
-        creationTimestamp: null
         labels:
           name: '${INSTANCE_NAME}'
           component: elasticsearch
@@ -63,14 +60,12 @@ objects:
       apiVersion: v1
       metadata:
         name: 'dc-${INSTANCE_NAME}'
-        creationTimestamp: null
         labels:
           name: '${INSTANCE_NAME}'
           component: elasticsearch
       spec:
         strategy:
           type: Recreate
-          resources: {}
         triggers:
           - type: ConfigChange
         replicas: 1
@@ -79,7 +74,6 @@ objects:
           component: elasticsearch
         template:
           metadata:
-            creationTimestamp: null
             labels:
               name: '${INSTANCE_NAME}'
               component: elasticsearch
@@ -108,15 +102,12 @@ objects:
                     valueFrom:
                       fieldRef:
                         fieldPath: metadata.namespace
-                resources: {}
                 volumeMounts:
                   - name: 'data-${INSTANCE_NAME}'
                     mountPath: /data
                 terminationMessagePath: /dev/termination-log
                 imagePullPolicy: IfNotPresent
-                capabilities: {}
                 securityContext:
-                  capabilities: {}
                   privileged: false
             volumes:
               - name: 'data-${INSTANCE_NAME}'

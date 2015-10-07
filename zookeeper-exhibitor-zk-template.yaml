@@ -2,7 +2,6 @@ kind: Template
 apiVersion: v1
 metadata:
   name: zookeeper-exhibitor-zk
-  creationTimestamp: null
   annotations:
     description: 'Zookeeper cluster using Exhibitor which coordinates using a bootstarp ZooKeeper cluster'
     iconClass: icon-database
@@ -13,7 +12,6 @@ objects:
       apiVersion: v1
       metadata:
         name: 'svc-exhibitor-${INSTANCE_NAME}'
-        creationTimestamp: null
         labels:
           name: '${INSTANCE_NAME}'
           component: zookeeper
@@ -46,14 +44,12 @@ objects:
       apiVersion: v1
       metadata:
         name: 'dc-${INSTANCE_NAME}'
-        creationTimestamp: null
         labels:
           name: '${INSTANCE_NAME}'
           component: zookeeper
       spec:
         strategy:
           type: Recreate
-          resources: {}
         triggers:
           - type: ConfigChange
         replicas: 1
