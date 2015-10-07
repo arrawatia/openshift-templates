@@ -85,8 +85,12 @@ objects:
                     value: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
                   - name: CONFIG_TYPE
                     value: ZK
-                  - name: ZK_CONFIG_PATH
-                    value: /exhibitor/elktest/test1
+                  - name: KUBERNETES_NAMESPACE
+                    valueFrom:
+                      fieldRef:
+                        fieldPath: metadata.namespace
+                  - name: INSTANCE_NAME
+                    value: '${INSTANCE_NAME}'
                   - name: ZK_CONNECT
                     value: "zookeeper-1.default.svc.cluster.local:2181,zookeeper-2.default.svc.cluster.local:2181,zookeeper-3.default.svc.cluster.local:2181"
                   - name: CONFIG_CHECK_MS
@@ -102,5 +106,10 @@ parameters:
   - name: APPLICATION_DOMAIN
     description: "The exposed hostname that will route to the ZK cluster, if left blank a value will be defaulted."
     value: ""
+  - name: PROJECT
+    description: "Project name"
+    valueFrom:
+      fieldRef:
+        fieldPath: metadata.namespace
 labels:
   template: zookeeper-exhibitor-zk
