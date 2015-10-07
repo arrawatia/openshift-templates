@@ -16,21 +16,14 @@ objects:
         creationTimestamp: null
         labels:
           name: '${INSTANCE_NAME}'
-          role: elasticsearch
+          component: elasticsearch
       spec:
         ports:
           - name: es-http
-            protocol: TCP
             port: 9200
             targetPort: 9200
-            nodePort: 0
         selector:
           name: '${INSTANCE_NAME}'
-        portalIP: ''
-        type: ClusterIP
-        sessionAffinity: None
-      status:
-        loadBalancer: {}
 
     - kind: Service
       apiVersion: v1
@@ -39,21 +32,15 @@ objects:
         creationTimestamp: null
         labels:
           name: '${INSTANCE_NAME}'
-          role: elasticsearch
+          component: elasticsearch
       spec:
         ports:
           - name: es-transport
             protocol: TCP
             port: 9300
             targetPort: 9300
-            nodePort: 0
         selector:
           name: '${INSTANCE_NAME}'
-        portalIP: ''
-        type: ClusterIP
-        sessionAffinity: None
-      status:
-        loadBalancer: {}
 
     #---------------------------------------------------------------------------------
     - kind: Route
@@ -64,7 +51,7 @@ objects:
           description: "Route for ${INSTANCE_NAME} Elasticsearch HTTP API"
         labels:
           name: '${INSTANCE_NAME}'
-          role: elasticsearch
+          component: elasticsearch
       spec:
         host: '${APPLICATION_DOMAIN}'
         to:
@@ -79,7 +66,7 @@ objects:
         creationTimestamp: null
         labels:
           name: '${INSTANCE_NAME}'
-          role: elasticsearch
+          component: elasticsearch
       spec:
         strategy:
           type: Recreate
@@ -89,13 +76,13 @@ objects:
         replicas: 1
         selector:
           name: '${INSTANCE_NAME}'
-          role: elasticsearch
+          component: elasticsearch
         template:
           metadata:
             creationTimestamp: null
             labels:
               name: '${INSTANCE_NAME}'
-              role: elasticsearch
+              component: elasticsearch
           spec:
             serviceAccount: elasticsearch
             containers:
