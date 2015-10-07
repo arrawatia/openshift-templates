@@ -92,8 +92,6 @@ objects:
                   - name: CONFIG_CHECK_MS
                     value: "50000"
                 imagePullPolicy: Always
-                securityContext:
-                  privileged: false
             restartPolicy: Always
             dnsPolicy: ClusterFirst
     
