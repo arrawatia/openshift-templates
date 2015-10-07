@@ -84,7 +84,7 @@ objects:
                     containerPort: 8181
                 env:
                   - name: KUBERNETES_TRUST_CERT
-                    value: true
+                    value: "true"
                   - name: KUBERNETES_CA_CERTIFICATE_FILE
                     value: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
                   - name: CONFIG_TYPE
@@ -94,7 +94,7 @@ objects:
                   - name: ZK_CONNECT
                     value: "zookeeper-1.default.svc.cluster.local:2181,zookeeper-2.default.svc.cluster.local:2181,zookeeper-3.default.svc.cluster.local:2181"
                   - name: CONFIG_CHECK_MS
-                    value: 50000
+                    value: "50000"
                 imagePullPolicy: Always
                 securityContext:
                   privileged: false
