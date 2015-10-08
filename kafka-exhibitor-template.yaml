@@ -38,7 +38,7 @@ objects:
           type: Recreate
         triggers:
           - type: ConfigChange
-        replicas: 3
+        replicas: 1
         selector:
           name: '${INSTANCE_NAME}'
           component: kafka
