@@ -48,7 +48,7 @@ objects:
               name: '${INSTANCE_NAME}'
               component: kafka
           spec:
-            serviceAccount: elasticsearch
+            serviceAccount: quantezza
             containers:
               - name: kafka-exhibitor
                 image: quantezza/k8s-kafka-exhibitor:latest

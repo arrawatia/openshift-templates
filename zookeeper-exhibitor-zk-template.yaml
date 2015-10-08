@@ -63,7 +63,7 @@ objects:
               name: '${INSTANCE_NAME}'
               component: zookeeper
           spec:
-            serviceAccount: elasticsearch
+            serviceAccount: quantezza
             containers:
               - name: zk-exhibitor
                 image: quantezza/zookeeper-exhibitor:latest
@@ -90,11 +90,11 @@ objects:
                       fieldRef:
                         fieldPath: metadata.namespace
                   - name: ZKCFG_ZPATH
-                    value: '/exhibitor/${INSTANCE_NAME}'
+                    value: '/$(KUBERNETES_NAMESPACE)/exhibitor/${INSTANCE_NAME}'
                   - name: ZKCFG_CONNECT
                     value: "zookeeper-1.default.svc.cluster.local:2181,zookeeper-2.default.svc.cluster.local:2181,zookeeper-3.default.svc.cluster.local:2181"
                   - name: CONFIG_CHECK_MS
-                    value: "50000"
+                    value: "10000"
                 imagePullPolicy: Always
             restartPolicy: Always
             dnsPolicy: ClusterFirst

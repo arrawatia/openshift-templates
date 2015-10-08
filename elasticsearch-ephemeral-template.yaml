@@ -78,7 +78,7 @@ objects:
               name: '${INSTANCE_NAME}'
               component: elasticsearch
           spec:
-            serviceAccount: elasticsearch
+            serviceAccount: quantezza
             containers:
               - name: elasticsearch
                 image: quay.io/pires/docker-elasticsearch-kubernetes:1.7.2
