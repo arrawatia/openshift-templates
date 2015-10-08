@@ -3,7 +3,7 @@ apiVersion: v1
 metadata:
   name: zookeeper-exhibitor-zk
   annotations:
-    description: 'Zookeeper cluster using Exhibitor which coordinates using a bootstarp ZooKeeper cluster'
+    description: 'Zookeeper cluster using Exhibitor which coordinates using a bootstrap ZooKeeper cluster'
     iconClass: icon-database
     tags: 'database,zookeeper'
 objects:

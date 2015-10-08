@@ -1,0 +1,79 @@
+kind: Template
+apiVersion: v1
+metadata:
+  name: kafka-exhibitor
+  annotations:
+    description: 'Kafka cluster using exhibitor ZK client for dynamic config changes'
+    iconClass: icon-database
+    tags: 'database,kakfa'
+objects:
+    #---------------------------------------------------------------------------------
+    - kind: Service
+      apiVersion: v1
+      metadata:
+        name: 'svc-kafka-${INSTANCE_NAME}'
+        labels:
+          name: '${INSTANCE_NAME}'
+          component: kafka
+      spec:
+        ports:
+          - name: broker
+            protocol: TCP
+            port: 9092
+            targetPort: 9092
+        selector:
+          name: '${INSTANCE_NAME}'
+          component: kafka
+
+  #---------------------------------------------------------------------------------
+    - kind: DeploymentConfig
+      apiVersion: v1
+      metadata:
+        name: 'dc-${INSTANCE_NAME}'
+        labels:
+          name: '${INSTANCE_NAME}'
+          component: kafka
+      spec:
+        strategy:
+          type: Recreate
+        triggers:
+          - type: ConfigChange
+        replicas: 1
+        selector:
+          name: '${INSTANCE_NAME}'
+          component: kafka
+        template:
+          metadata:
+            labels:
+              name: '${INSTANCE_NAME}'
+              component: kafka
+          spec:
+            serviceAccount: elasticsearch
+            containers:
+              - name: kafka-exhibitor
+                image: quantezza/k8s-kafka-exhibitor:latest
+                securityContext:
+                  runAsUser: 0
+                ports:
+                  - name: broker
+                    containerPort: 9092
+                env:
+                  - name: KUBERNETES_TRUST_CERT
+                    value: "true"
+                  - name: "ADVERTISED_PORT"
+                    value: "9092"
+                  - name: "EXHIBITOR_SVC_NAME"
+                    value: "svc-exhibitor-${ZK_INSTANCE_NAME}"
+                imagePullPolicy: Always
+            restartPolicy: Always
+            dnsPolicy: ClusterFirst
+    
+parameters:
+  - name: INSTANCE_NAME
+    description: Application instance name
+    required: true
+  - name: ZK_INSTANCE_NAME
+    description: ZooKeeper instance name
+    required: true
+labels:
+  template: kafka-exhibitor
