@@ -1,0 +1,187 @@
+apiVersion: "v1"
+kind: "List"
+items:
+
+- kind: Route
+  apiVersion: v1
+  metadata:
+    name: storm-webdav
+    labels:
+      component: storm
+    annotations:
+      description: "Route for application's http service"
+  spec:
+    host: storm-webdav.elk-test.apps.demo.os.quantezza.com
+    to:
+      kind: Service
+      name: nimbus-webdav
+
+- kind: Service
+  apiVersion: v1
+  metadata:
+    name: nimbus-webdav
+    labels:
+      component: storm
+      name: nimbus-webdav
+  spec:
+    ports:
+      - port: 8080
+    selector:
+      name: nimbus
+
+- kind: Service
+  apiVersion: v1
+  metadata:
+    name: nimbus
+    labels:
+      component: storm
+      name: nimbus
+  spec:
+    ports:
+      - port: 6627
+    selector:
+      name: nimbus
+
+- kind: Pod
+  apiVersion: v1
+  metadata:
+    name: nimbus
+    labels:
+      component: storm
+      name: nimbus
+  spec:
+    containers:
+      - name: nimbus
+        securityContext:
+          runAsUser: 0
+        image: arrawatia/storm-nimbus
+        imagePullPolicy: Always
+        ports:
+          - name: nimbus
+            containerPort: 6627
+        env:
+        - name: EXHIBITOR_SERVERS
+          value: "exhibitor-zk.elk-test.svc.cluster.local"
+        - name: EXHIBITOR_PORT
+          value: "8181"
+        resources:
+          limits:
+            cpu: 100m
+        volumeMounts:
+          - mountPath: /webdav
+            name: webdav-volume
+
+      - name: nimbus-webdav
+        securityContext:
+          runAsUser: 0
+        image: quantezza/python-webdav
+        imagePullPolicy: Always
+        ports:
+          - name: nimbus-webdav
+            containerPort: 8080
+        volumeMounts:
+          - mountPath: /webdav
+            name: webdav-volume
+    volumes:
+      - name: webdav-volume
+        emptyDir: {}
+
+
+- kind: Route
+  apiVersion: v1
+  metadata:
+    name: storm-ui
+    labels:
+      component: storm
+    annotations:
+      description: "Route for application's http service"
+  spec:
+    host: storm-ui.elk-test.apps.demo.os.quantezza.com
+    to:
+      kind: Service
+      name: storm-ui
+
+- kind: Service
+  apiVersion: v1
+  metadata:
+    name: storm-ui
+    labels:
+      component: storm
+      name: storm-ui
+  spec:
+    ports:
+      - port: 8080
+    selector:
+      name: storm-ui
+
+- kind: Pod
+  apiVersion: v1
+  metadata:
+    name: storm-ui
+    labels:
+      component: storm
+      name: storm-ui
+  spec:
+    containers:
+      - name: storm-ui
+        securityContext:
+          runAsUser: 0
+        image: arrawatia/storm-ui
+        imagePullPolicy: Always
+        ports:
+          - name: storm-ui
+            containerPort: 8080
+        env:
+        - name: EXHIBITOR_SERVERS
+          value: "exhibitor-zk.elk-test.svc.cluster.local"
+        - name: EXHIBITOR_PORT
+          value: "8181"
+        - name: NIMBUS_HOST
+          value: "nimbus.elk-test.svc.cluster.local"
+        resources:
+          limits:
+            cpu: 100m
+
+- kind: ReplicationController
+  apiVersion: v1
+  metadata:
+    name: storm-worker-controller
+    labels:
+      component: storm
+      name: storm-worker
+  spec:
+    replicas: 3
+    selector:
+      name: storm-worker
+    template:
+      metadata:
+        labels:
+          component: storm
+          name: storm-worker
+          uses: nimbus
+      spec:
+        containers:
+          - name: storm-worker
+            securityContext:
+              runAsUser: 0
+            image: arrawatia/storm-worker
+            imagePullPolicy: Always
+            env:
+            - name: EXHIBITOR_SERVERS
+              value: "exhibitor-zk.elk-test.svc.cluster.local"
+            - name: EXHIBITOR_PORT
+              value: "8181"
+            - name: NIMBUS_HOST
+              value: "nimbus.elk-test.svc.cluster.local"
+            ports:
+              - hostPort: 6700
+                containerPort: 6700
+              - hostPort: 6701
+                containerPort: 6701
+              - hostPort: 6702
+                containerPort: 6702
+              - hostPort: 6703
+                containerPort: 6703
+            resources:
+              limits:
+                cpu: 200m
