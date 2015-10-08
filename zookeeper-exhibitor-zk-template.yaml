@@ -22,7 +22,8 @@ objects:
             port: 8181
             targetPort: 8181
         selector:
-          component: '${INSTANCE_NAME}'
+          name: '${INSTANCE_NAME}'
+          component: zookeeper
     #---------------------------------------------------------------------------------
     - kind: Route
       apiVersion: v1
@@ -58,7 +59,6 @@ objects:
           component: zookeeper
         template:
           metadata:
-            creationTimestamp: null
             labels:
               name: '${INSTANCE_NAME}'
               component: zookeeper
