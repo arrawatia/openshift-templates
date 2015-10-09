@@ -1,0 +1,65 @@
+kind: Template
+apiVersion: v1
+metadata:
+  name: rico-elasticsearch-load
+  annotations:
+    description: 'Rico Samza job for loading data from Kafka to Elasticsearch'
+    iconClass: icon-database
+    tags: 'database,kafka,samza,elasticsearch'
+objects:
+  #---------------------------------------------------------------------------------
+    - kind: DeploymentConfig
+      apiVersion: v1
+      metadata:
+        name: 'dc-${INSTANCE_NAME}'
+        labels:
+          name: '${INSTANCE_NAME}'
+          component: rico-es-load
+      spec:
+        strategy:
+          type: Recreate
+        triggers:
+          - type: ConfigChange
+        replicas: 1
+        selector:
+          name: '${INSTANCE_NAME}'
+          component: rico-es-load
+        template:
+          metadata:
+            labels:
+              name: '${INSTANCE_NAME}'
+              component: rico-es-load
+          spec:
+            containers:
+              - name: es-load
+                image: quantezza/k8s-rico-elasticsearch-load:latest
+                #image: gcr.io/google_containers/busybox
+                #command: [ "/bin/sh", "-c", "env" ]
+                securityContext:
+                  privileged: false
+                env:
+                  - name: "EXHIBITOR_SVC_NAME"
+                    value: "svc-exhibitor-${ZK_INSTANCE_NAME}"
+                  - name: "KAFKA_SVC_NAME"
+                    value: "svc-kafka-${KAFKA_INSTANCE_NAME}"
+                  - name: "ELASTICSEARCH_SVC_NAME"
+                    value: "svc-transport-${ELASTICSEARCH_INSTANCE_NAME}"
+                imagePullPolicy: Always
+            restartPolicy: Always
+            dnsPolicy: ClusterFirst
+    
+parameters:
+  - name: INSTANCE_NAME
+    description: Application instance name
+    required: true
+  - name: ZK_INSTANCE_NAME
+    description: ZooKeeper instance name
+    required: true
+  - name: KAFKA_INSTANCE_NAME
+    description: Kafka instance name
+    required: true
+  - name: ELASTICSEARCH_INSTANCE_NAME
+    description: Elasticsearch instance name
+    required: true
+labels:
+  template: rico-elasticsearch-load
