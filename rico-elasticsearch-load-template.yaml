@@ -36,7 +36,7 @@ objects:
                 #image: gcr.io/google_containers/busybox
                 #command: [ "/bin/sh", "-c", "env" ]
                 securityContext:
-                  privileged: false
+                  privileged: true
                 env:
                   - name: "EXHIBITOR_SVC_NAME"
                     value: "svc-exhibitor-${ZK_INSTANCE_NAME}"
