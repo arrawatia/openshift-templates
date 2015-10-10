@@ -1,0 +1,98 @@
+kind: Template
+apiVersion: v1
+metadata:
+  name: kibana
+  annotations:
+    description: 'Kibana'
+    iconClass: icon-database
+    tags: 'kibana,elasticsearch'
+objects:
+    #---------------------------------------------------------------------------------
+    - kind: Service
+      apiVersion: v1
+      metadata:
+        name: 'svc-http-${INSTANCE_NAME}'
+        labels:
+          name: '${INSTANCE_NAME}'
+          component: kibana
+      spec:
+        ports:
+          - name: http
+            port: 80
+            targetPort: 5601
+        selector:
+          name: '${INSTANCE_NAME}'
+          component: kibana
+
+    #---------------------------------------------------------------------------------
+    - kind: Route
+      apiVersion: v1
+      metadata:
+        name: '${INSTANCE_NAME}'
+        annotations:
+          description: "Route for ${INSTANCE_NAME} Kibana"
+        labels:
+          name: '${INSTANCE_NAME}'
+          component: kibana
+      spec:
+        host: '${APPLICATION_DOMAIN}'
+        to:
+          kind: Service
+          name: 'svc-http-${INSTANCE_NAME}'
+
+  #---------------------------------------------------------------------------------
+    - kind: DeploymentConfig
+      apiVersion: v1
+      metadata:
+        name: 'dc-${INSTANCE_NAME}'
+        labels:
+          name: '${INSTANCE_NAME}'
+          component: kibana
+      spec:
+        strategy:
+          type: Recreate
+        triggers:
+          - type: ConfigChange
+        replicas: 1
+        selector:
+          name: '${INSTANCE_NAME}'
+          component: kibana
+        template:
+          metadata:
+            labels:
+              name: '${INSTANCE_NAME}'
+              component: kibana
+          spec:
+            containers:
+              - name: kibana
+                image: fabric8/kibana4:4.1.0
+                #image: gcr.io/google_containers/busybox
+                #command: [ "/bin/sh", "-c", "env" ]
+                securityContext:
+                  #runAsUser: 0
+                  privileged: true
+                env:
+                  - name: KUBERNETES_TRUST_CERT
+                    value: "true"
+                  - name: KUBERNETES_NAMESPACE
+                    valueFrom:
+                      fieldRef:
+                        fieldPath: metadata.namespace
+                  - name: ELASTICSEARCH_URL
+                    value: "http://svc-http-${ELASTICSEARCH_INSTANCE_NAME}.$(KUBERNETES_NAMESPACE).svc.cluster.local:9200"
+                imagePullPolicy: Always
+            restartPolicy: Always
+            dnsPolicy: ClusterFirst
+    
+parameters:
+  - name: INSTANCE_NAME
+    description: Application instance name
+    required: true
+  - name: ELASTICSEARCH_INSTANCE_NAME
+    description: Elasticsearch instance name
+    required: true
+  - name: APPLICATION_DOMAIN
+    description: "Application domain, passed in by OpenShift"
+    value: ''
+labels:
+  template: kibana
