@@ -92,7 +92,7 @@ objects:
                   - name: ZKCFG_ZPATH
                     value: '/$(KUBERNETES_NAMESPACE)/exhibitor/${INSTANCE_NAME}'
                   - name: ZKCFG_CONNECT
-                    value: "zookeeper-1.default.svc.cluster.local:2181,zookeeper-2.default.svc.cluster.local:2181,zookeeper-3.default.svc.cluster.local:2181"
+                    value: "zookeeper-1.${BOOTSTRAP_ZK_NAMESPACE}.svc.cluster.local:2181,zookeeper-2.${BOOTSTRAP_ZK_NAMESPACE}.svc.cluster.local:2181,zookeeper-3.${BOOTSTRAP_ZK_NAMESPACE}.svc.cluster.local:2181"
                   - name: CONFIG_CHECK_MS
                     value: "10000"
                 imagePullPolicy: Always
@@ -103,6 +103,9 @@ parameters:
   - name: INSTANCE_NAME
     description: Application instance name
     required: true
+  - name: BOOTSTRAP_ZK_NAMESPACE
+    description: Namespace that bootstrap ZK cluster is running in
+    value: default
   - name: APPLICATION_DOMAIN
     description: "The exposed hostname that will route to the ZK cluster, if left blank a value will be defaulted."
     value: ""
