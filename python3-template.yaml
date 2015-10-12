@@ -1,0 +1,160 @@
+kind: Template
+apiVersion: v1
+metadata:
+  name: python3
+  annotations:
+    description: 'Python 3 STI with support for secrets.'
+    iconClass: icon-python
+    tags: 'python'
+labels:
+  template: python3
+
+parameters:
+  - name: APP_NAME
+    description: App name
+    generate: expression
+    from: '[a-zA-Z0-9]{40}'
+    required: true
+  - name: SOURCE_REPOSITORY_URL
+    description: The URL of the repository with your application source code
+    required: true
+  - name: SOURCE_REPOSITORY_REF
+    description: 'Set this to a branch name, tag or other ref of your repository if you are not using the default branch'
+  - name: CONTEXT_DIR
+    description: Set this to the relative path to your project if it is not in the root of your repository
+  - name: GITHUB_WEBHOOK_SECRET
+    description: A secret string used to configure the GitHub webhook
+    generate: expression
+    from: '[a-zA-Z0-9]{40}'
+  - name: APPLICATION_DOMAIN
+    description: Host name
+    value: ''
+
+#---------------------------------------------------------------------------------
+
+objects:
+#---------------------------------------------------------------------------------
+  - kind: Route
+    apiVersion: v1
+    metadata:
+      name: '${APP_NAME}'
+      labels:
+        name: '${APP_NAME}'
+    spec:
+      host: '${APPLICATION_DOMAIN}'
+      to:
+        kind: Service
+        name: '${APP_NAME}'
+
+#---------------------------------------------------------------------------------
+  - kind: Service
+    apiVersion: v1
+    metadata:
+      name: '${APP_NAME}'
+      annotations:
+        description: Exposes and load balances the application pods
+      labels:
+        name: '${APP_NAME}'
+    spec:
+      ports:
+        - name: web
+          port: 5000
+          targetPort: 5000
+      selector:
+        name: '${APP_NAME}'
+        role: app
+
+
+#---------------------------------------------------------------------------------
+  - kind: ImageStream
+    apiVersion: v1
+    metadata:
+      name: '${APP_NAME}'
+      annotations:
+        description: Keeps track of changes in the application image
+
+#---------------------------------------------------------------------------------
+  - kind: BuildConfig
+    apiVersion: v1
+    metadata:
+      name: '${APP_NAME}'
+      annotations:
+        description: Defines how to build the application
+    spec:
+      source:
+        type: Git
+        git:
+          uri: '${SOURCE_REPOSITORY_URL}'
+          ref: '${SOURCE_REPOSITORY_REF}'
+        contextDir: '${CONTEXT_DIR}'
+      strategy:
+        type: Source
+        sourceStrategy:
+          from:
+            kind: ImageStreamTag
+            namespace: openshift
+            name: 'python:3.3'
+      output:
+        to:
+          kind: ImageStreamTag
+          name: '${APP_NAME}:latest'
+      triggers:
+        - type: ImageChange
+        - type: GitHub
+          github:
+            secret: '${GITHUB_WEBHOOK_SECRET}'
+
+#---------------------------------------------------------------------------------
+  - kind: DeploymentConfig
+    apiVersion: v1
+    metadata:
+      name: '${APP_NAME}'
+      annotations:
+        description: Defines how to deploy the application server
+      labels:
+        name: '${APP_NAME}'
+    spec:
+      strategy:
+        type: Rolling
+      triggers:
+        - type: ImageChange
+          imageChangeParams:
+            automatic: true
+            containerNames:
+              - '${APP_NAME}'
+            from:
+              kind: ImageStreamTag
+              name: '${APP_NAME}:latest'
+        - type: ConfigChange
+      replicas: 1
+      selector:
+        name: '${APP_NAME}'
+        role: app
+      template:
+        metadata:
+          name: '${APP_NAME}'
+          labels:
+            name: '${APP_NAME}'
+            role: app
+        spec:
+          containers:
+            - name: '${APP_NAME}'
+              image: '${APP_NAME}'
+              ports:
+                - containerPort: 5000
+              volumeMounts:
+                # name must match the volume name below
+                - name: secret-volume
+                  mountPath: /etc/secret-volume
+                  readOnly: true
+              env:
+                - name: APP_NAME
+                  value: '${APP_NAME}'
+                - name: APP_PORT
+                  value: '5000'
+                - name: SECRET_DIR
+                  value: '/etc/secret-volume/'
+          volumes:
+            - name: secret-volume
+              secret:
+                secretName: app-secret
