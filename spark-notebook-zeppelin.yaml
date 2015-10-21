@@ -1,0 +1,342 @@
+kind: Template
+apiVersion: v1
+metadata:
+  name: spark-notebook
+  creationTimestamp: null
+  annotations:
+    description: 'Spark cluster with Jupyter and Zeppelin notebook.'
+labels:
+  template: spark-jupyter-zeppelin
+
+parameters:
+  - name: INSTANCE_NAME
+    description: Instance name
+    generate: expression
+    from: '[a-zA-Z0-9]{5}'
+    required: true
+  - name: APPLICATION_DOMAIN
+    description: Host name
+    value: ''
+
+
+#---------------------------------------------------------------------------------
+
+objects:
+
+# WEB CONSOLE
+#---------------------------------------------------------------------------------
+  - kind: Route
+    apiVersion: v1
+    metadata:
+      name: '${INSTANCE_NAME}-spark-master'
+      labels:
+        component: spark
+      annotations:
+        description: "Route for application's http service"
+    spec:
+      host: '${APPLICATION_DOMAIN}'
+      to:
+        kind: Service
+        name: '${INSTANCE_NAME}-spark-master-ui'
+
+  - kind: Service
+    apiVersion: v1
+    metadata:
+      name: '${INSTANCE_NAME}-spark-master-ui'
+      labels:
+        component: spark
+        name: '${INSTANCE_NAME}-spark-master-ui'
+    spec:
+      ports:
+        - port: 8080
+          targetPort: 8080
+      selector:
+        name: '${INSTANCE_NAME}-spark-master'
+
+
+# MASTER
+#---------------------------------------------------------------------------------
+  - kind: Service
+    apiVersion: v1
+    metadata:
+      name: '${INSTANCE_NAME}-spark-master'
+      labels:
+        component: spark
+        name: '${INSTANCE_NAME}-spark-master'
+    spec:
+      ports:
+        - port: 7077
+          targetPort: 7077
+      selector:
+        name: '${INSTANCE_NAME}-spark-master'
+
+
+  - kind: DeploymentConfig
+    apiVersion: v1
+    metadata:
+      name: '${INSTANCE_NAME}-spark-master'
+      labels:
+        name: '${INSTANCE_NAME}-spark-master'
+        component: spark
+    spec:
+      strategy:
+        type: Recreate
+      triggers:
+        - type: ConfigChange
+      replicas: 1
+      selector:
+        name: '${INSTANCE_NAME}-spark-master'
+        component: spark
+      template:
+        metadata:
+          name: '${INSTANCE_NAME}-spark-master'
+          labels:
+            name: '${INSTANCE_NAME}-spark-master'
+            component: spark
+        spec:
+          serviceAccount: quantezza
+          containers:
+            - name: '${INSTANCE_NAME}-spark-master'
+              securityContext:
+                runAsUser: 0
+              image: quantezza/spark-master-1.5.1:v1
+              ports:
+                - containerPort: 7077
+                - containerPort: 8080
+              env:
+                - name: INSTANCE_ID
+                  value: '${INSTANCE_NAME}'
+              imagePullPolicy: Always
+
+          restartPolicy: Always
+          dnsPolicy: ClusterFirst
+
+
+# DRIVER
+#---------------------------------------------------------------------------------
+
+  - kind: DeploymentConfig
+    apiVersion: v1
+    metadata:
+      name: '${INSTANCE_NAME}-spark-driver'
+      labels:
+        name: '${INSTANCE_NAME}-spark-driver'
+        component: spark
+    spec:
+      strategy:
+        type: Recreate
+      triggers:
+        - type: ConfigChange
+      replicas: 1
+      selector:
+        name: '${INSTANCE_NAME}-spark-driver'
+        component: spark
+      template:
+        metadata:
+          labels:
+            name: '${INSTANCE_NAME}-spark-driver'
+            component: spark
+        spec:
+          serviceAccount: quantezza
+          containers:
+            - name: spark-driver
+              securityContext:
+                runAsUser: 0
+              image: quantezza/spark-driver-1.5.1:v1
+              env:
+                - name: SPARK_MASTER_SERVICE_HOST
+                  value: '${INSTANCE_NAME}-spark-master'
+                - name: SPARK_MASTER_SERVICE_PORT
+                  value: '7077'
+                - name: INSTANCE_ID
+                  value: '${INSTANCE_NAME}'
+              imagePullPolicy: Always
+          restartPolicy: Always
+          dnsPolicy: ClusterFirst
+
+# WORKERS
+#---------------------------------------------------------------------------------
+  - kind: DeploymentConfig
+    apiVersion: v1
+    metadata:
+      name: '${INSTANCE_NAME}-spark-worker'
+      labels:
+        name: '${INSTANCE_NAME}-spark-worker'
+        component: spark
+    spec:
+      strategy:
+        type: Recreate
+      triggers:
+        - type: ConfigChange
+      replicas: 3
+      selector:
+        name: '${INSTANCE_NAME}-spark-worker'
+        component: spark
+      template:
+        metadata:
+          labels:
+            name: '${INSTANCE_NAME}-spark-worker'
+            component: spark
+        spec:
+          serviceAccount: quantezza
+          containers:
+            - name: spark-worker
+              securityContext:
+                runAsUser: 0
+              image: quantezza/spark-worker-1.5.1:v1
+              ports:
+                - containerPort: 8888
+              env:
+                - name: SPARK_MASTER_SERVICE_HOST
+                  value: '${INSTANCE_NAME}-spark-master'
+                - name: SPARK_MASTER_SERVICE_PORT
+                  value: '7077'
+                - name: INSTANCE_ID
+                  value: '${INSTANCE_NAME}'
+              imagePullPolicy: Always
+          restartPolicy: Always
+          dnsPolicy: ClusterFirst
+
+# PYTHON NOTEBOOK
+#---------------------------------------------------------------------------------
+  - kind: Route
+    apiVersion: v1
+    metadata:
+      name: '${INSTANCE_NAME}-spark-notebook'
+      labels:
+        component: spark
+      annotations:
+        description: "Route for application's http service"
+    spec:
+      host: '${APPLICATION_DOMAIN}'
+      to:
+        kind: Service
+        name: '${INSTANCE_NAME}-spark-notebook'
+
+  - kind: Service
+    apiVersion: v1
+    metadata:
+      name: '${INSTANCE_NAME}-spark-notebook'
+      labels:
+        component: spark
+        name: '${INSTANCE_NAME}-spark-notebook'
+    spec:
+      ports:
+        - port: 8888
+          targetPort: 8888
+      selector:
+        name: '${INSTANCE_NAME}-spark-notebook'
+
+
+  - kind: DeploymentConfig
+    apiVersion: v1
+    metadata:
+      name: '${INSTANCE_NAME}-spark-notebook'
+      labels:
+        name: '${INSTANCE_NAME}-spark-notebook'
+        component: spark
+    spec:
+      strategy:
+        type: Recreate
+      triggers:
+        - type: ConfigChange
+      replicas: 1
+      selector:
+        name: '${INSTANCE_NAME}-spark-notebook'
+        component: spark
+      template:
+        metadata:
+          labels:
+            name: '${INSTANCE_NAME}-spark-notebook'
+            component: spark
+        spec:
+          serviceAccount: quantezza
+          containers:
+            - name: spark-notebook
+              securityContext:
+                runAsUser: 0
+              image: quantezza/spark-notebook-1.5.1:v1
+              ports:
+                - containerPort: 8888
+              env:
+                - name: SPARK_MASTER_SERVICE_HOST
+                  value: '${INSTANCE_NAME}-spark-master'
+                - name: SPARK_MASTER_SERVICE_PORT
+                  value: '7077'
+                - name: INSTANCE_ID
+                  value: '${INSTANCE_NAME}'
+              imagePullPolicy: Always
+          restartPolicy: Always
+          dnsPolicy: ClusterFirst
+
+# ZEPPELIN NOTEBOOK
+#---------------------------------------------------------------------------------
+  - kind: Route
+    apiVersion: v1
+    metadata:
+      name: '${INSTANCE_NAME}-spark-zeppelin'
+      labels:
+        component: spark
+      annotations:
+        description: "Route for application's http service"
+    spec:
+      host: '${APPLICATION_DOMAIN}'
+      to:
+        kind: Service
+        name: '${INSTANCE_NAME}-spark-zeppelin'
+
+  - kind: Service
+    apiVersion: v1
+    metadata:
+      name: '${INSTANCE_NAME}-spark-zeppelin'
+      labels:
+        component: spark
+        name: '${INSTANCE_NAME}-spark-zeppelin'
+    spec:
+      ports:
+        - port: 8080
+          targetPort: 8080
+      selector:
+        name: '${INSTANCE_NAME}-spark-zeppelin'
+
+
+  - kind: DeploymentConfig
+    apiVersion: v1
+    metadata:
+      name: '${INSTANCE_NAME}-spark-zeppelin'
+      labels:
+        name: '${INSTANCE_NAME}-spark-zeppelin'
+        component: spark
+    spec:
+      strategy:
+        type: Recreate
+      triggers:
+        - type: ConfigChange
+      replicas: 1
+      selector:
+        name: '${INSTANCE_NAME}-spark-zeppelin'
+        component: spark
+      template:
+        metadata:
+          labels:
+            name: '${INSTANCE_NAME}-spark-zeppelin'
+            component: spark
+        spec:
+          serviceAccount: quantezza
+          containers:
+            - name: spark-zeppelin
+              securityContext:
+                runAsUser: 0
+              image: quantezza/spark-zeppelin-1.5.1:v1
+              ports:
+                - containerPort: 8080
+              env:
+                - name: SPARK_MASTER_SERVICE_HOST
+                  value: '${INSTANCE_NAME}-spark-master'
+                - name: SPARK_MASTER_SERVICE_PORT
+                  value: '7077'
+                - name: INSTANCE_ID
+                  value: '${INSTANCE_NAME}'
+              imagePullPolicy: Always
+          restartPolicy: Always
+          dnsPolicy: ClusterFirst
