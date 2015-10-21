@@ -5,7 +5,7 @@ metadata:
   annotations:
     description: 'Kibana'
     iconClass: icon-database
-    tags: 'kibana,elasticsearch'
+    tags: 'instant-app,kibana,elasticsearch'
 objects:
     #---------------------------------------------------------------------------------
     - kind: Service

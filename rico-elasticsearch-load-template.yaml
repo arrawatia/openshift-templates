@@ -5,7 +5,7 @@ metadata:
   annotations:
     description: 'Rico Samza job for loading data from Kafka to Elasticsearch'
     iconClass: icon-database
-    tags: 'database,kafka,samza,elasticsearch'
+    tags: 'kafka,samza,elasticsearch'
 objects:
   #---------------------------------------------------------------------------------
     - kind: DeploymentConfig

@@ -5,7 +5,7 @@ metadata:
   annotations:
     description: 'Elasticsearch database service, without persistent storage. WARNING: Any data stored will be lost upon pod destruction. Only use this template for testing'
     iconClass: icon-database
-    tags: 'database,elasticsearch'
+    tags: 'instant-app,database,elasticsearch'
 objects:
     #---------------------------------------------------------------------------------
     - kind: Service

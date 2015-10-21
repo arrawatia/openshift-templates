@@ -5,6 +5,7 @@ metadata:
   creationTimestamp: null
   annotations:
     description: 'Spark cluster with Jupyter and Zeppelin notebook.'
+    tags: 'instant-app,spark'
 labels:
   template: spark-jupyter-zeppelin
 

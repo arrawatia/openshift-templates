@@ -5,7 +5,7 @@ metadata:
   annotations:
     description: 'Python 3 STI with support for secrets.'
     iconClass: icon-python
-    tags: 'python'
+    tags: 'instant-app,python'
 labels:
   template: python3
 

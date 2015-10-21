@@ -5,7 +5,7 @@ metadata:
   annotations:
     description: 'Zookeeper cluster using Exhibitor which coordinates using a bootstrap ZooKeeper cluster'
     iconClass: icon-database
-    tags: 'database,zookeeper'
+    tags: 'instant-app,database,zookeeper'
 objects:
     #---------------------------------------------------------------------------------
     - kind: Service

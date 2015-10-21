@@ -5,7 +5,7 @@ metadata:
   annotations:
     description: 'Kafka cluster using exhibitor ZK client for dynamic config changes'
     iconClass: icon-database
-    tags: 'database,kakfa'
+    tags: 'instant-app,kakfa'
 objects:
     #---------------------------------------------------------------------------------
     - kind: Service
