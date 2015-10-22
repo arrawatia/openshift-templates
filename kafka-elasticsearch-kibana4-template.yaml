@@ -1,0 +1,372 @@
+kind: Template
+apiVersion: v1
+metadata:
+  name: kafka-elasticsearch-kibana4
+  annotations:
+    description: 'Kafka, Elasticsearch, Kibana 4 Stack'
+    iconClass: icon-database
+    tags: 'instant-app,kakfa,elasticsearch,kibana'
+objects:
+    #---------------------------------------------------------------------------------
+    - kind: Service
+      apiVersion: v1
+      metadata:
+        name: 'svc-exhibitor-${ZK_INSTANCE_NAME}'
+        labels:
+          name: '${ZK_INSTANCE_NAME}'
+          component: zookeeper
+      spec:
+        ports:
+          - name: exhibitor
+            protocol: TCP
+            port: 8181
+            targetPort: 8181
+        selector:
+          name: '${ZK_INSTANCE_NAME}'
+          component: zookeeper
+    #---------------------------------------------------------------------------------
+    - kind: Route
+      apiVersion: v1
+      metadata:
+        name: '${ZK_INSTANCE_NAME}'
+        annotations:
+          description: "Route for ${ZK_INSTANCE_NAME} Exhibitor HTTP API"
+        labels:
+          name: '${ZK_INSTANCE_NAME}'
+          component: zookeeper
+      spec:
+        host: '${APPLICATION_DOMAIN}'
+        to:
+          kind: Service
+          name: 'svc-exhibitor-${ZK_INSTANCE_NAME}'
+
+  #---------------------------------------------------------------------------------
+    - kind: DeploymentConfig
+      apiVersion: v1
+      metadata:
+        name: 'dc-${ZK_INSTANCE_NAME}'
+        labels:
+          name: '${ZK_INSTANCE_NAME}'
+          component: zookeeper
+      spec:
+        strategy:
+          type: Recreate
+        triggers:
+          - type: ConfigChange
+        replicas: 1
+        selector:
+          name: '${ZK_INSTANCE_NAME}'
+          component: zookeeper
+        template:
+          metadata:
+            labels:
+              name: '${ZK_INSTANCE_NAME}'
+              component: zookeeper
+          spec:
+            serviceAccount: quantezza
+            containers:
+              - name: zk-exhibitor
+                image: quantezza/zookeeper-exhibitor:latest
+                securityContext:
+                  runAsUser: 0
+                ports:
+                  - name: client
+                    containerPort: 2181
+                  - name: followers
+                    containerPort: 2888
+                  - name: election
+                    containerPort: 3888
+                  - name: exhibitor
+                    containerPort: 8181
+                env:
+                  - name: KUBERNETES_TRUST_CERT
+                    value: "true"
+                  - name: KUBERNETES_CA_CERTIFICATE_FILE
+                    value: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
+                  - name: CONFIG_TYPE
+                    value: ZK
+                  - name: KUBERNETES_NAMESPACE
+                    valueFrom:
+                      fieldRef:
+                        fieldPath: metadata.namespace
+                  - name: ZKCFG_ZPATH
+                    value: '/$(KUBERNETES_NAMESPACE)/exhibitor/${ZK_INSTANCE_NAME}'
+                  - name: ZKCFG_CONNECT
+                    value: "zookeeper-1.${BOOTSTRAP_ZK_NAMESPACE}.svc.cluster.local:2181,zookeeper-2.${BOOTSTRAP_ZK_NAMESPACE}.svc.cluster.local:2181,zookeeper-3.${BOOTSTRAP_ZK_NAMESPACE}.svc.cluster.local:2181"
+                  - name: CONFIG_CHECK_MS
+                    value: "10000"
+                imagePullPolicy: Always
+            restartPolicy: Always
+            dnsPolicy: ClusterFirst
+  
+    #---------------------------------------------------------------------------------
+    - kind: Service
+      apiVersion: v1
+      metadata:
+        name: 'svc-kafka-${KAFKA_INSTANCE_NAME}'
+        labels:
+          name: '${KAFKA_INSTANCE_NAME}'
+          component: kafka
+      spec:
+        ports:
+          - name: broker
+            protocol: TCP
+            port: 9092
+            targetPort: 9092
+        selector:
+          name: '${KAFKA_INSTANCE_NAME}'
+          component: kafka
+
+  #---------------------------------------------------------------------------------
+    - kind: DeploymentConfig
+      apiVersion: v1
+      metadata:
+        name: 'dc-${KAFKA_INSTANCE_NAME}'
+        labels:
+          name: '${KAFKA_INSTANCE_NAME}'
+          component: kafka
+      spec:
+        strategy:
+          type: Recreate
+        triggers:
+          - type: ConfigChange
+        replicas: 3
+        selector:
+          name: '${KAFKA_INSTANCE_NAME}'
+          component: kafka
+        template:
+          metadata:
+            labels:
+              name: '${KAFKA_INSTANCE_NAME}'
+              component: kafka
+          spec:
+            serviceAccount: quantezza
+            containers:
+              - name: kafka-exhibitor
+                image: quantezza/k8s-kafka-exhibitor:latest
+                securityContext:
+                  runAsUser: 0
+                ports:
+                  - name: broker
+                    containerPort: 9092
+                env:
+                  - name: KUBERNETES_TRUST_CERT
+                    value: "true"
+                  - name: "ADVERTISED_PORT"
+                    value: "9092"
+                  - name: "EXHIBITOR_SVC_NAME"
+                    value: "svc-exhibitor-${ZK_INSTANCE_NAME}"
+                imagePullPolicy: Always
+            restartPolicy: Always
+            dnsPolicy: ClusterFirst
+
+    #---------------------------------------------------------------------------------
+    - kind: Service
+      apiVersion: v1
+      metadata:
+        name: 'svc-http-${ELASTICSEARCH_INSTANCE_NAME}'
+        labels:
+          name: '${ELASTICSEARCH_INSTANCE_NAME}'
+          component: elasticsearch
+      spec:
+        ports:
+          - name: es-http
+            port: 9200
+            targetPort: 9200
+        selector:
+          name: '${ELASTICSEARCH_INSTANCE_NAME}'
+
+    - kind: Service
+      apiVersion: v1
+      metadata:
+        name: 'svc-transport-${ELASTICSEARCH_INSTANCE_NAME}'
+        labels:
+          name: '${ELASTICSEARCH_INSTANCE_NAME}'
+          component: elasticsearch
+      spec:
+        ports:
+          - name: es-transport
+            protocol: TCP
+            port: 9300
+            targetPort: 9300
+        selector:
+          name: '${ELASTICSEARCH_INSTANCE_NAME}'
+
+    #---------------------------------------------------------------------------------
+    - kind: Route
+      apiVersion: v1
+      metadata:
+        name: '${ELASTICSEARCH_INSTANCE_NAME}'
+        annotations:
+          description: "Route for ${ELASTICSEARCH_INSTANCE_NAME} Elasticsearch HTTP API"
+        labels:
+          name: '${ELASTICSEARCH_INSTANCE_NAME}'
+          component: elasticsearch
+      spec:
+        host: '${APPLICATION_DOMAIN}'
+        to:
+          kind: Service
+          name: 'svc-http-${ELASTICSEARCH_INSTANCE_NAME}'
+
+  #---------------------------------------------------------------------------------
+    - kind: DeploymentConfig
+      apiVersion: v1
+      metadata:
+        name: 'dc-${ELASTICSEARCH_INSTANCE_NAME}'
+        labels:
+          name: '${ELASTICSEARCH_INSTANCE_NAME}'
+          component: elasticsearch
+      spec:
+        strategy:
+          type: Recreate
+        triggers:
+          - type: ConfigChange
+        replicas: 3
+        selector:
+          name: '${ELASTICSEARCH_INSTANCE_NAME}'
+          component: elasticsearch
+        template:
+          metadata:
+            labels:
+              name: '${ELASTICSEARCH_INSTANCE_NAME}'
+              component: elasticsearch
+          spec:
+            serviceAccount: quantezza
+            containers:
+              - name: elasticsearch
+                image: quay.io/pires/docker-elasticsearch-kubernetes:1.7.2
+                securityContext:
+                  runAsUser: 0
+                  privileged: false
+                ports:
+                  - name: "http"
+                    containerPort: 9200
+                    protocol: TCP
+                  - name: "transport"
+                    containerPort: 9300
+                    protocol: TCP
+                env:
+                  - name: "KUBERNETES_TRUST_CERT"
+                    value: "true"
+                  - name: KUBERNETES_CA_CERTIFICATE_FILE
+                    value: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
+                  - name: "DISCOVERY_SERVICE"
+                    value: 'svc-${ELASTICSEARCH_INSTANCE_NAME}'
+                  - name: NAMESPACE
+                    valueFrom:
+                      fieldRef:
+                        fieldPath: metadata.namespace
+                volumeMounts:
+                  - name: 'data-${ELASTICSEARCH_INSTANCE_NAME}'
+                    mountPath: /data
+                terminationMessagePath: /dev/termination-log
+                imagePullPolicy: IfNotPresent
+            volumes:
+              - name: 'data-${ELASTICSEARCH_INSTANCE_NAME}'
+                emptyDir:
+                  medium: ''
+            restartPolicy: Always
+            dnsPolicy: ClusterFirst
+
+    #---------------------------------------------------------------------------------
+    - kind: Service
+      apiVersion: v1
+      metadata:
+        name: 'svc-http-${KIBANA_INSTANCE_NAME}'
+        labels:
+          name: '${KIBANA_INSTANCE_NAME}'
+          component: kibana
+      spec:
+        ports:
+          - name: http
+            port: 80
+            targetPort: 5601
+        selector:
+          name: '${KIBANA_INSTANCE_NAME}'
+          component: kibana
+
+    #---------------------------------------------------------------------------------
+    - kind: Route
+      apiVersion: v1
+      metadata:
+        name: '${KIBANA_INSTANCE_NAME}'
+        annotations:
+          description: "Route for ${KIBANA_INSTANCE_NAME} Kibana"
+        labels:
+          name: '${KIBANA_INSTANCE_NAME}'
+          component: kibana
+      spec:
+        host: '${APPLICATION_DOMAIN}'
+        to:
+          kind: Service
+          name: 'svc-http-${KIBANA_INSTANCE_NAME}'
+
+  #---------------------------------------------------------------------------------
+    - kind: DeploymentConfig
+      apiVersion: v1
+      metadata:
+        name: 'dc-${KIBANA_INSTANCE_NAME}'
+        labels:
+          name: '${KIBANA_INSTANCE_NAME}'
+          component: kibana
+      spec:
+        strategy:
+          type: Recreate
+        triggers:
+          - type: ConfigChange
+        replicas: 1
+        selector:
+          name: '${KIBANA_INSTANCE_NAME}'
+          component: kibana
+        template:
+          metadata:
+            labels:
+              name: '${KIBANA_INSTANCE_NAME}'
+              component: kibana
+          spec:
+            containers:
+              - name: kibana
+                image: fabric8/kibana4:4.1.0
+                #image: gcr.io/google_containers/busybox
+                #command: [ "/bin/sh", "-c", "env" ]
+                securityContext:
+                  #runAsUser: 0
+                  privileged: true
+                env:
+                  - name: KUBERNETES_TRUST_CERT
+                    value: "true"
+                  - name: KUBERNETES_NAMESPACE
+                    valueFrom:
+                      fieldRef:
+                        fieldPath: metadata.namespace
+                  - name: ELASTICSEARCH_URL
+                    value: "http://svc-http-${ELASTICSEARCH_INSTANCE_NAME}.$(KUBERNETES_NAMESPACE).svc.cluster.local:9200"
+                imagePullPolicy: Always
+            restartPolicy: Always
+            dnsPolicy: ClusterFirst
+
+parameters:
+  - name: APPLICATION_DOMAIN
+    description: "The exposed hostname that will route to the ZK cluster, if left blank a value will be defaulted."
+    value: ""
+  - name: BOOTSTRAP_ZK_NAMESPACE
+    description: Namespace that bootstrap ZK cluster is running in
+    value: default
+  - name: ZK_INSTANCE_NAME
+    description: ZooKeeper instance name
+    required: true
+    value: zk
+  - name: KAFKA_INSTANCE_NAME
+    description: Kafka instance name
+    required: true
+    value: kafka
+  - name: ELASTICSEARCH_INSTANCE_NAME
+    description: Elasticsearch instance name
+    required: true
+    value: es
+  - name: KIBANA_INSTANCE_NAME
+    description: Kibana instance name
+    required: true
+    value: kibana
+labels:
+  template: kafka-elasticsearch-kibana4
