@@ -66,7 +66,7 @@ objects:
             serviceAccount: quantezza
             containers:
               - name: zk-exhibitor
-                image: quantezza/zookeeper-exhibitor:latest
+                image: gcr.io/quantiply-edge-cloud/zk-exhibitor-3.4.6:v1
                 securityContext:
                   runAsUser: 0
                 ports:
@@ -143,7 +143,7 @@ objects:
             serviceAccount: quantezza
             containers:
               - name: kafka-exhibitor
-                image: quantezza/k8s-kafka-exhibitor:latest
+                image: gcr.io/quantiply-edge-cloud/kafka-0.8.2.1:v1
                 securityContext:
                   runAsUser: 0
                 ports:
@@ -234,7 +234,7 @@ objects:
             serviceAccount: quantezza
             containers:
               - name: elasticsearch
-                image: quay.io/pires/docker-elasticsearch-kubernetes:1.7.2
+                image: gcr.io/quantiply-edge-cloud/elasticsearch-1.7.2:v1
                 securityContext:
                   runAsUser: 0
                   privileged: false
