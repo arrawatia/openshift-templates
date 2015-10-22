@@ -98,7 +98,7 @@ objects:
                   - name: KUBERNETES_CA_CERTIFICATE_FILE
                     value: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
                   - name: "DISCOVERY_SERVICE"
-                    value: 'svc-${INSTANCE_NAME}'
+                    value: 'svc-transport-${INSTANCE_NAME}'
                   - name: NAMESPACE
                     valueFrom:
                       fieldRef:
