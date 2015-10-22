@@ -1,7 +1,7 @@
 kind: Template
 apiVersion: v1
 metadata:
-  name: spark-notebook
+  name: spark-jupyter-zeppelin
   creationTimestamp: null
   annotations:
     description: 'Spark cluster with Jupyter and Zeppelin notebook.'
@@ -13,7 +13,7 @@ parameters:
   - name: INSTANCE_NAME
     description: Instance name
     generate: expression
-    from: '[a-zA-Z0-9]{5}'
+    from: '[a-z]{5}'
     required: true
   - name: APPLICATION_DOMAIN
     description: Host name
@@ -100,7 +100,7 @@ objects:
             - name: '${INSTANCE_NAME}-spark-master'
               securityContext:
                 runAsUser: 0
-              image: quantezza/spark-master-1.5.1:v1
+              image: gcr.io/quantiply-edge-cloud/spark-master-1.5.1:v1
               ports:
                 - containerPort: 7077
                 - containerPort: 8080
@@ -143,7 +143,7 @@ objects:
             - name: spark-driver
               securityContext:
                 runAsUser: 0
-              image: quantezza/spark-driver-1.5.1:v1
+              image: gcr.io/quantiply-edge-cloud/spark-driver-1.5.1:v1
               env:
                 - name: SPARK_MASTER_SERVICE_HOST
                   value: '${INSTANCE_NAME}-spark-master'
@@ -184,7 +184,7 @@ objects:
             - name: spark-worker
               securityContext:
                 runAsUser: 0
-              image: quantezza/spark-worker-1.5.1:v1
+              image: gcr.io/quantiply-edge-cloud/spark-worker-1.5.1:v1
               ports:
                 - containerPort: 8888
               env:
@@ -256,7 +256,7 @@ objects:
             - name: spark-notebook
               securityContext:
                 runAsUser: 0
-              image: quantezza/spark-notebook-1.5.1:v1
+              image: gcr.io/quantiply-edge-cloud/spark-notebook-1.5.1:v1
               ports:
                 - containerPort: 8888
               env:
@@ -328,7 +328,7 @@ objects:
             - name: spark-zeppelin
               securityContext:
                 runAsUser: 0
-              image: quantezza/spark-zeppelin-1.5.1:v1
+              image: gcr.io/quantiply-edge-cloud/spark-zeppelin-1.5.1:v1
               ports:
                 - containerPort: 8080
               env:

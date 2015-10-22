@@ -1,0 +1,213 @@
+kind: Template
+apiVersion: v1
+metadata:
+  name: hdfs
+  creationTimestamp: null
+  annotations:
+    description: 'HDFS cluster with Hue.'
+labels:
+  template: hdfs
+
+parameters:
+  - name: INSTANCE_NAME
+    description: Instance name
+    generate: expression
+    from: '[a-zA-Z0-9]{5}'
+    required: true
+  - name: APPLICATION_DOMAIN
+    description: Host name
+    value: ''
+
+
+#---------------------------------------------------------------------------------
+
+objects:
+
+# HTTPFS
+#---------------------------------------------------------------------------------
+  - kind: Route
+    apiVersion: v1
+    metadata:
+      name: '${INSTANCE_NAME}-hue'
+      labels:
+        component: hdfs
+        instance: '${INSTANCE_NAME}'
+      annotations:
+        description: "Route for application's http service"
+    spec:
+      host: '${APPLICATION_DOMAIN}'
+      to:
+        kind: Service
+        name: '${INSTANCE_NAME}-hue'
+
+  - kind: Service
+    apiVersion: v1
+    metadata:
+      name: '${INSTANCE_NAME}-hue'
+      labels:
+        component: hdfs
+        instance: '${INSTANCE_NAME}'
+        name: '${INSTANCE_NAME}-hue'
+    spec:
+      ports:
+        - port: 14000
+          targetPort: 14000
+      selector:
+        name: '${INSTANCE_NAME}-hue'
+
+  - kind: DeploymentConfig
+    apiVersion: v1
+    metadata:
+      name: '${INSTANCE_NAME}-hue'
+      labels:
+        name: '${INSTANCE_NAME}-hue'
+        component: hdfs
+        instance: '${INSTANCE_NAME}'
+    spec:
+      strategy:
+        type: Recreate
+      triggers:
+        - type: ConfigChange
+      replicas: 1
+      selector:
+        name: '${INSTANCE_NAME}-hue'
+        component: hdfs
+        instance: '${INSTANCE_NAME}'
+      template:
+        metadata:
+          name: '${INSTANCE_NAME}-hue'
+          labels:
+            name: '${INSTANCE_NAME}-hue'
+            component: hdfs
+            instance: '${INSTANCE_NAME}'
+        spec:
+          serviceAccount: quantezza
+          containers:
+            - name: '${INSTANCE_NAME}-hue'
+              image: quantezza/hdfs-2.7.1:v1
+              securityContext:
+                runAsUser: 0
+              ports:
+                - containerPort: 14000
+              env:
+                - name: TYPE
+                  value: 'HTTPFS'
+                - name: NAMENODE_HOST
+                  value: '${INSTANCE_NAME}-namenode'
+              imagePullPolicy: Always
+
+          restartPolicy: Always
+          dnsPolicy: ClusterFirst
+
+
+# NAMENODE
+#---------------------------------------------------------------------------------
+
+
+  - kind: Service
+    apiVersion: v1
+    metadata:
+      name: '${INSTANCE_NAME}-namenode'
+      labels:
+        component: hdfs
+        instance: '${INSTANCE_NAME}'
+        name: '${INSTANCE_NAME}-namenode'
+    spec:
+      ports:
+        - port: 9000
+          targetPort: 9000
+        - port: 50070
+          targetPort: 50070
+      selector:
+        name: '${INSTANCE_NAME}-namenode'
+
+  - kind: DeploymentConfig
+    apiVersion: v1
+    metadata:
+      name: '${INSTANCE_NAME}-namenode'
+      labels:
+        name: '${INSTANCE_NAME}-namenode'
+        component: hdfs
+        instance: '${INSTANCE_NAME}'
+    spec:
+      strategy:
+        type: Recreate
+      triggers:
+        - type: ConfigChange
+      replicas: 1
+      selector:
+        name: '${INSTANCE_NAME}-namenode'
+        component: hdfs
+        instance: '${INSTANCE_NAME}'
+      template:
+        metadata:
+          name: '${INSTANCE_NAME}-namenode'
+          labels:
+            name: '${INSTANCE_NAME}-namenode'
+            component: hdfs
+            instance: '${INSTANCE_NAME}'
+        spec:
+          serviceAccount: quantezza
+          containers:
+            - name: '${INSTANCE_NAME}-namenode'
+              image: quantezza/hdfs-2.7.1:v1
+              securityContext:
+                runAsUser: 0
+              ports:
+                - containerPort: 50070
+                - containerPort: 9000
+              env:
+                - name: TYPE
+                  value: 'NAMENODE'
+                - name: NAMENODE_HOST
+                  value: '0.0.0.0'
+                - name: REPLICATION_FACTOR
+                  value: 3
+              imagePullPolicy: Always
+
+          restartPolicy: Always
+          dnsPolicy: ClusterFirst
+
+# WORKERS
+#---------------------------------------------------------------------------------
+  - kind: DeploymentConfig
+    apiVersion: v1
+    metadata:
+      name: '${INSTANCE_NAME}-datanode'
+      labels:
+        name: '${INSTANCE_NAME}-datanode'
+        component: hdfs
+    spec:
+      strategy:
+        type: Recreate
+      triggers:
+        - type: ConfigChange
+      replicas: 3
+      selector:
+        name: '${INSTANCE_NAME}-datanode'
+        component: hdfs
+      template:
+        metadata:
+          labels:
+            name: '${INSTANCE_NAME}-datanode'
+            component: hdfs
+        spec:
+          serviceAccount: quantezza
+          containers:
+            - name: '${INSTANCE_NAME}-datanode'
+              securityContext:
+                runAsUser: 0
+              image: quantezza/hdfs-2.7.1:v1
+              ports:
+                - containerPort: 50020
+                - containerPort: 50010
+              env:
+                - name: TYPE
+                  value: 'NAMENODE'
+                - name: NAMENODE_HOST
+                  value: '${INSTANCE_NAME}-namenode'
+                - name: REPLICATION_FACTOR
+                  value: 3
+              imagePullPolicy: Always
+          restartPolicy: Always
+          dnsPolicy: ClusterFirst
