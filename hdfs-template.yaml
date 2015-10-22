@@ -94,7 +94,7 @@ objects:
                   value: 'HTTPFS'
                 - name: NAMENODE_HOST
                   value: '${INSTANCE_NAME}-namenode'
-              imagePullPolicy: Always
+              imagePullPolicy: IfNotPresent: Always
 
           restartPolicy: Always
           dnsPolicy: ClusterFirst
@@ -163,7 +163,7 @@ objects:
                   value: '0.0.0.0'
                 - name: REPLICATION_FACTOR
                   value: 3
-              imagePullPolicy: Always
+              imagePullPolicy: IfNotPresent: Always
 
           restartPolicy: Always
           dnsPolicy: ClusterFirst
@@ -208,6 +208,6 @@ objects:
                   value: '${INSTANCE_NAME}-namenode'
                 - name: REPLICATION_FACTOR
                   value: 3
-              imagePullPolicy: Always
+              imagePullPolicy: IfNotPresent: Always
           restartPolicy: Always
           dnsPolicy: ClusterFirst

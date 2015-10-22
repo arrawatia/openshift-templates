@@ -95,7 +95,7 @@ objects:
                     value: "zookeeper-1.${BOOTSTRAP_ZK_NAMESPACE}.svc.cluster.local:2181,zookeeper-2.${BOOTSTRAP_ZK_NAMESPACE}.svc.cluster.local:2181,zookeeper-3.${BOOTSTRAP_ZK_NAMESPACE}.svc.cluster.local:2181"
                   - name: CONFIG_CHECK_MS
                     value: "10000"
-                imagePullPolicy: Always
+                imagePullPolicy: IfNotPresent
             restartPolicy: Always
             dnsPolicy: ClusterFirst
     

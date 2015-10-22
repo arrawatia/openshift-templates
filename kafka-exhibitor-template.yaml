@@ -64,7 +64,7 @@ objects:
                     value: "9092"
                   - name: "EXHIBITOR_SVC_NAME"
                     value: "svc-exhibitor-${ZK_INSTANCE_NAME}"
-                imagePullPolicy: Always
+                imagePullPolicy: IfNotPresent
             restartPolicy: Always
             dnsPolicy: ClusterFirst
     

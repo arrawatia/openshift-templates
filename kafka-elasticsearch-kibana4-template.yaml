@@ -95,7 +95,7 @@ objects:
                     value: "zookeeper-1.${BOOTSTRAP_ZK_NAMESPACE}.svc.cluster.local:2181,zookeeper-2.${BOOTSTRAP_ZK_NAMESPACE}.svc.cluster.local:2181,zookeeper-3.${BOOTSTRAP_ZK_NAMESPACE}.svc.cluster.local:2181"
                   - name: CONFIG_CHECK_MS
                     value: "10000"
-                imagePullPolicy: Always
+                imagePullPolicy: IfNotPresent
             restartPolicy: Always
             dnsPolicy: ClusterFirst
   
@@ -156,7 +156,7 @@ objects:
                     value: "9092"
                   - name: "EXHIBITOR_SVC_NAME"
                     value: "svc-exhibitor-${ZK_INSTANCE_NAME}"
-                imagePullPolicy: Always
+                imagePullPolicy: IfNotPresent
             restartPolicy: Always
             dnsPolicy: ClusterFirst
 
@@ -341,7 +341,7 @@ objects:
                         fieldPath: metadata.namespace
                   - name: ELASTICSEARCH_URL
                     value: "http://svc-http-${ELASTICSEARCH_INSTANCE_NAME}.$(KUBERNETES_NAMESPACE).svc.cluster.local:9200"
-                imagePullPolicy: Always
+                imagePullPolicy: IfNotPresent
             restartPolicy: Always
             dnsPolicy: ClusterFirst
 

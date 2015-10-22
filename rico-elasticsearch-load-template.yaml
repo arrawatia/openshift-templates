@@ -54,7 +54,7 @@ objects:
                     value: "${ELASTICSEARCH_INDEX_DATE_FORMAT}"
                   - name: ELASTICSEARCH_INDEX_DATE_ZONE
                     value: "${ELASTICSEARCH_INDEX_DATE_ZONE}"
-                imagePullPolicy: Always
+                imagePullPolicy: IfNotPresent
             restartPolicy: Always
             dnsPolicy: ClusterFirst
     

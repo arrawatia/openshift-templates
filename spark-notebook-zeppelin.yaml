@@ -107,7 +107,7 @@ objects:
               env:
                 - name: INSTANCE_ID
                   value: '${INSTANCE_NAME}'
-              imagePullPolicy: Always
+              imagePullPolicy: IfNotPresent
 
           restartPolicy: Always
           dnsPolicy: ClusterFirst
@@ -151,7 +151,7 @@ objects:
                   value: '7077'
                 - name: INSTANCE_ID
                   value: '${INSTANCE_NAME}'
-              imagePullPolicy: Always
+              imagePullPolicy: IfNotPresent
           restartPolicy: Always
           dnsPolicy: ClusterFirst
 
@@ -194,7 +194,7 @@ objects:
                   value: '7077'
                 - name: INSTANCE_ID
                   value: '${INSTANCE_NAME}'
-              imagePullPolicy: Always
+              imagePullPolicy: IfNotPresent
           restartPolicy: Always
           dnsPolicy: ClusterFirst
 
@@ -266,7 +266,7 @@ objects:
                   value: '7077'
                 - name: INSTANCE_ID
                   value: '${INSTANCE_NAME}'
-              imagePullPolicy: Always
+              imagePullPolicy: IfNotPresent
           restartPolicy: Always
           dnsPolicy: ClusterFirst
 
@@ -338,6 +338,6 @@ objects:
                   value: '7077'
                 - name: INSTANCE_ID
                   value: '${INSTANCE_NAME}'
-              imagePullPolicy: Always
+              imagePullPolicy: IfNotPresent
           restartPolicy: Always
           dnsPolicy: ClusterFirst

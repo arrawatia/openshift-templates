@@ -80,7 +80,7 @@ objects:
                         fieldPath: metadata.namespace
                   - name: ELASTICSEARCH_URL
                     value: "http://svc-http-${ELASTICSEARCH_INSTANCE_NAME}.$(KUBERNETES_NAMESPACE).svc.cluster.local:9200"
-                imagePullPolicy: Always
+                imagePullPolicy: IfNotPresent
             restartPolicy: Always
             dnsPolicy: ClusterFirst
     
