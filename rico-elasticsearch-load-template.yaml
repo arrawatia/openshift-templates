@@ -5,7 +5,7 @@ metadata:
   annotations:
     description: 'Rico Samza job for loading data from Kafka to Elasticsearch'
     iconClass: icon-database
-    tags: 'kafka,samza,elasticsearch'
+    tags: 'instant-app,kafka,samza,elasticsearch'
 objects:
   #---------------------------------------------------------------------------------
     - kind: DeploymentConfig
@@ -32,7 +32,7 @@ objects:
           spec:
             containers:
               - name: es-load
-                image: quantezza/k8s-rico-elasticsearch-load:latest
+                image: gcr.io/quantiply-edge-cloud/rico-elasticsearch-load-0.0.19:v1
                 #image: gcr.io/google_containers/busybox
                 #command: [ "/bin/sh", "-c", "env" ]
                 securityContext:
@@ -44,22 +44,53 @@ objects:
                     value: "svc-kafka-${KAFKA_INSTANCE_NAME}"
                   - name: "ELASTICSEARCH_SVC_NAME"
                     value: "svc-transport-${ELASTICSEARCH_INSTANCE_NAME}"
+                  - name: KAFKA_TOPIC_NAME
+                    value: "${KAFKA_TOPIC_NAME}"
+                  - name: ELASTICSEARCH_INDEX_PREFIX
+                    value: "${ELASTICSEARCH_INDEX_PREFIX}"
+                  - name: ELASTICSEARCH_DOC_TYPE
+                    value: "${ELASTICSEARCH_DOC_TYPE}"
+                  - name: ELASTICSEARCH_INDEX_DATE_FORMAT
+                    value: "${ELASTICSEARCH_INDEX_DATE_FORMAT}"
+                  - name: ELASTICSEARCH_INDEX_DATE_ZONE
+                    value: "${ELASTICSEARCH_INDEX_DATE_ZONE}"
                 imagePullPolicy: Always
             restartPolicy: Always
             dnsPolicy: ClusterFirst
     
 parameters:
+  - name: KAFKA_TOPIC_NAME
+    description: Name of Kafka topic to load from
+    required: true
+  - name: ELASTICSEARCH_INDEX_PREFIX
+    description: Elasticsearch index prefix
+    required: true
+  - name: ELASTICSEARCH_DOC_TYPE
+    description: Elasticsearch doc type
+    required: true
+  - name: ELASTICSEARCH_INDEX_DATE_FORMAT
+    description: "DateFormatter pattern for the index name (https://docs.oracle.com/javase/8/docs/api/java/time/format/DateTimeFormatter.html)"
+    required: true
+    value: ".yyyy"
+  - name: ELASTICSEARCH_INDEX_DATE_ZONE
+    description: "Timezone to use for the index date format (https://docs.oracle.com/javase/8/docs/api/java/time/ZoneId.html)"
+    required: true
+    value: "Etc/UTC"
   - name: INSTANCE_NAME
     description: Application instance name
     required: true
+    value: es-load
   - name: ZK_INSTANCE_NAME
     description: ZooKeeper instance name
     required: true
+    value: zk
   - name: KAFKA_INSTANCE_NAME
     description: Kafka instance name
     required: true
+    value: kafka
   - name: ELASTICSEARCH_INSTANCE_NAME
     description: Elasticsearch instance name
     required: true
+    value: es
 labels:
   template: rico-elasticsearch-load
