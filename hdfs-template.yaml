@@ -95,7 +95,7 @@ objects:
                 - name: WEBHDFS_PASSWORD
                   value: 'hduser'
                 - name: WEBHDFS_URL
-                  value: 'http://${INSTANCE_NAME}-namenode:50070/webhdfs/v1'
+                  value: 'http://${INSTANCE_NAME}-httpfs:14000/webhdfs/v1'
               imagePullPolicy: Always
 
           restartPolicy: Always
@@ -104,7 +104,6 @@ objects:
 
 # NAMENODE
 #---------------------------------------------------------------------------------
-
 
   - kind: Service
     apiVersion: v1
@@ -165,6 +164,77 @@ objects:
                   value: 'NAMENODE'
                 - name: NAMENODE_HOST
                   value: '0.0.0.0'
+                - name: DFS_REPLICATION
+                  value: '3'
+              imagePullPolicy: Always
+
+          restartPolicy: Always
+          dnsPolicy: ClusterFirst
+
+# HTTP-FS
+#---------------------------------------------------------------------------------
+
+  - kind: Service
+    apiVersion: v1
+    metadata:
+      name: '${INSTANCE_NAME}-httpfs'
+      labels:
+        component: hdfs
+        instance: '${INSTANCE_NAME}'
+        name: '${INSTANCE_NAME}-httpfs'
+    spec:
+      ports:
+        - name: http
+          port: 14000
+          targetPort: 14000
+      selector:
+        name: '${INSTANCE_NAME}-httpfs'
+
+  - kind: DeploymentConfig
+    apiVersion: v1
+    metadata:
+      name: '${INSTANCE_NAME}-httpfs'
+      labels:
+        name: '${INSTANCE_NAME}-httpfs'
+        component: hdfs
+        instance: '${INSTANCE_NAME}'
+    spec:
+      strategy:
+        type: Recreate
+      triggers:
+        - type: ConfigChange
+      replicas: 1
+      selector:
+        name: '${INSTANCE_NAME}-httpfs'
+        component: hdfs
+        instance: '${INSTANCE_NAME}'
+      template:
+        metadata:
+          name: '${INSTANCE_NAME}-httpfs'
+          labels:
+            name: '${INSTANCE_NAME}-httpfs'
+            component: hdfs
+            instance: '${INSTANCE_NAME}'
+        spec:
+          serviceAccount: quantezza
+          containers:
+            - name: '${INSTANCE_NAME}-httpfs'
+              image: gcr.io/quantiply-edge-cloud/hdfs-2.7.1:v1
+              securityContext:
+                runAsUser: 0
+              ports:
+                - containerPort: 14000
+              env:
+                - name: TYPE
+                  value: 'HTTPFS'
+                - name: HTTPFS_CONFIG
+                  value: "/opt/hadoop/etc/hadoop/"
+                - name: MY_NAMESPACE
+                  valueFrom:
+                    fieldRef:
+                      fieldPath: metadata.namespace
+                - name: NAMENODE_HOST
+                  value: '${INSTANCE_NAME}-namenode.$(MY_NAMESPACE).endpoints.cluster.local'
                 - name: DFS_REPLICATION
                   value: '3'
               imagePullPolicy: Always
