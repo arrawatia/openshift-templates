@@ -251,6 +251,7 @@ objects:
       labels:
         name: '${INSTANCE_NAME}-datanode'
         component: hdfs
+        instance: '${INSTANCE_NAME}'
     spec:
       strategy:
         type: Recreate
@@ -265,6 +266,7 @@ objects:
           labels:
             name: '${INSTANCE_NAME}-datanode'
             component: hdfs
+            instance: '${INSTANCE_NAME}'
         spec:
           serviceAccount: quantezza
           containers:

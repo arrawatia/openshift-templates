@@ -32,6 +32,7 @@ objects:
       name: '${INSTANCE_NAME}-spark-master'
       labels:
         component: spark
+        instance: '${INSTANCE_NAME}'
       annotations:
         description: "Route for application's http service"
     spec:
@@ -47,6 +48,7 @@ objects:
       labels:
         component: spark
         name: '${INSTANCE_NAME}-spark-master-ui'
+        instance: '${INSTANCE_NAME}'
     spec:
       ports:
         - port: 8080
@@ -64,6 +66,7 @@ objects:
       labels:
         component: spark
         name: '${INSTANCE_NAME}-spark-master'
+        instance: '${INSTANCE_NAME}'
     spec:
       ports:
         - port: 7077
@@ -79,6 +82,7 @@ objects:
       labels:
         name: '${INSTANCE_NAME}-spark-master'
         component: spark
+        instance: '${INSTANCE_NAME}'
     spec:
       strategy:
         type: Recreate
@@ -94,6 +98,7 @@ objects:
           labels:
             name: '${INSTANCE_NAME}-spark-master'
             component: spark
+            instance: '${INSTANCE_NAME}'
         spec:
           serviceAccount: quantezza
           containers:
@@ -123,6 +128,7 @@ objects:
       labels:
         name: '${INSTANCE_NAME}-spark-driver'
         component: spark
+        instance: '${INSTANCE_NAME}'
     spec:
       strategy:
         type: Recreate
@@ -137,6 +143,7 @@ objects:
           labels:
             name: '${INSTANCE_NAME}-spark-driver'
             component: spark
+            instance: '${INSTANCE_NAME}'
         spec:
           serviceAccount: quantezza
           containers:
@@ -164,6 +171,7 @@ objects:
       labels:
         name: '${INSTANCE_NAME}-spark-worker'
         component: spark
+        instance: '${INSTANCE_NAME}'
     spec:
       strategy:
         type: Recreate
@@ -178,6 +186,7 @@ objects:
           labels:
             name: '${INSTANCE_NAME}-spark-worker'
             component: spark
+            instance: '${INSTANCE_NAME}'
         spec:
           serviceAccount: quantezza
           containers:
@@ -206,6 +215,7 @@ objects:
       name: '${INSTANCE_NAME}-spark-notebook'
       labels:
         component: spark
+        instance: '${INSTANCE_NAME}'
       annotations:
         description: "Route for application's http service"
     spec:
@@ -221,6 +231,7 @@ objects:
       labels:
         component: spark
         name: '${INSTANCE_NAME}-spark-notebook'
+        instance: '${INSTANCE_NAME}'
     spec:
       ports:
         - port: 8888
@@ -236,6 +247,7 @@ objects:
       labels:
         name: '${INSTANCE_NAME}-spark-notebook'
         component: spark
+        instance: '${INSTANCE_NAME}'
     spec:
       strategy:
         type: Recreate
@@ -250,6 +262,7 @@ objects:
           labels:
             name: '${INSTANCE_NAME}-spark-notebook'
             component: spark
+            instance: '${INSTANCE_NAME}'
         spec:
           serviceAccount: quantezza
           containers:
@@ -278,6 +291,7 @@ objects:
       name: '${INSTANCE_NAME}-spark-zeppelin'
       labels:
         component: spark
+        instance: '${INSTANCE_NAME}'
       annotations:
         description: "Route for application's http service"
     spec:
@@ -293,6 +307,7 @@ objects:
       labels:
         component: spark
         name: '${INSTANCE_NAME}-spark-zeppelin'
+        instance: '${INSTANCE_NAME}'
     spec:
       ports:
         - port: 8080
@@ -308,6 +323,7 @@ objects:
       labels:
         name: '${INSTANCE_NAME}-spark-zeppelin'
         component: spark
+        instance: '${INSTANCE_NAME}'
     spec:
       strategy:
         type: Recreate
@@ -322,6 +338,7 @@ objects:
           labels:
             name: '${INSTANCE_NAME}-spark-zeppelin'
             component: spark
+            instance: '${INSTANCE_NAME}'
         spec:
           serviceAccount: quantezza
           containers:
