@@ -279,7 +279,13 @@ objects:
                   value: '7077'
                 - name: INSTANCE_ID
                   value: '${INSTANCE_NAME}'
-              imagePullPolicy: IfNotPresent
+              imagePullPolicy: Always
+              volumeMounts:
+              - mountPath: /data
+                name: data
+          volumes:
+            - name: data
+              emptyDir: {}
           restartPolicy: Always
           dnsPolicy: ClusterFirst
 
