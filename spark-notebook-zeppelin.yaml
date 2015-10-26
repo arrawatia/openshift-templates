@@ -105,7 +105,7 @@ objects:
             - name: '${INSTANCE_NAME}-spark-master'
               securityContext:
                 runAsUser: 0
-              image: gcr.io/quantiply-edge-cloud/spark-master-1.5.1:v1
+              image: gcr.io/quantiply-edge-cloud/spark-master-1.5.1:v2
               ports:
                 - containerPort: 7077
                 - containerPort: 8080
@@ -150,7 +150,7 @@ objects:
             - name: spark-driver
               securityContext:
                 runAsUser: 0
-              image: gcr.io/quantiply-edge-cloud/spark-driver-1.5.1:v1
+              image: gcr.io/quantiply-edge-cloud/spark-driver-1.5.1:v2
               env:
                 - name: SPARK_MASTER_SERVICE_HOST
                   value: '${INSTANCE_NAME}-spark-master'
@@ -193,7 +193,7 @@ objects:
             - name: spark-worker
               securityContext:
                 runAsUser: 0
-              image: gcr.io/quantiply-edge-cloud/spark-worker-1.5.1:v1
+              image: gcr.io/quantiply-edge-cloud/spark-worker-1.5.1:v2
               ports:
                 - containerPort: 8888
               env:
@@ -269,7 +269,7 @@ objects:
             - name: spark-notebook
               securityContext:
                 runAsUser: 0
-              image: gcr.io/quantiply-edge-cloud/spark-notebook-1.5.1:v1
+              image: gcr.io/quantiply-edge-cloud/spark-notebook-1.5.1:v2
               ports:
                 - containerPort: 8888
               env:
@@ -351,7 +351,7 @@ objects:
             - name: spark-zeppelin
               securityContext:
                 runAsUser: 0
-              image: gcr.io/quantiply-edge-cloud/spark-zeppelin-1.5.1:v1
+              image: gcr.io/quantiply-edge-cloud/spark-zeppelin-1.5.1:v2
               ports:
                 - containerPort: 8080
               env:
