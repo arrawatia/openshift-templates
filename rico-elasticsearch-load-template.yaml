@@ -41,7 +41,7 @@ objects:
                   - name: "EXHIBITOR_SVC_NAME"
                     value: "svc-exhibitor-${ZK_INSTANCE_NAME}"
                   - name: "KAFKA_SVC_NAME"
-                    value: "svc-kafka-${KAFKA_INSTANCE_NAME}"
+                    value: "svc-broker-${KAFKA_INSTANCE_NAME}"
                   - name: "ELASTICSEARCH_SVC_NAME"
                     value: "svc-transport-${ELASTICSEARCH_INSTANCE_NAME}"
                   - name: KAFKA_TOPIC_NAME

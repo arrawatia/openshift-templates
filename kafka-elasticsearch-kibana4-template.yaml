@@ -103,7 +103,7 @@ objects:
     - kind: Service
       apiVersion: v1
       metadata:
-        name: 'svc-kafka-${KAFKA_INSTANCE_NAME}'
+        name: 'svc-broker-${KAFKA_INSTANCE_NAME}'
         labels:
           name: '${KAFKA_INSTANCE_NAME}'
           component: kafka
@@ -178,7 +178,23 @@ objects:
           name: '${KAFKA_INSTANCE_NAME}'
           component: schema-registry
 
-  #---------------------------------------------------------------------------------
+    #---------------------------------------------------------------------------------
+    - kind: Route
+      apiVersion: v1
+      metadata:
+        name: 'registry-${KAFKA_INSTANCE_NAME}'
+        annotations:
+          description: "Route for Confluent Schema Registry for ${KAFKA_INSTANCE_NAME}"
+        labels:
+          name: '${KAFKA_INSTANCE_NAME}'
+          component: schema-registry
+      spec:
+        host: '${APPLICATION_DOMAIN}'
+        to:
+          kind: Service
+          name: 'svc-registry-${KAFKA_INSTANCE_NAME}'
+
+    #---------------------------------------------------------------------------------
     - kind: DeploymentConfig
       apiVersion: v1
       metadata:
@@ -203,12 +219,12 @@ objects:
           spec:
             serviceAccount: quantezza
             containers:
-              - name: kafka-exhibitor
+              - name: confluent-schema-registry
                 image: gcr.io/quantiply-edge-cloud/confluent-schema-registry-1.0:latest
                 securityContext:
                   privileged: true
                 ports:
-                  - name: broker
+                  - name: registry
                     containerPort: 8081
                 env:
                   - name: "EXHIBITOR_SVC_NAME"
