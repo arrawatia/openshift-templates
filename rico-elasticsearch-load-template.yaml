@@ -16,10 +16,6 @@ objects:
           name: '${INSTANCE_NAME}'
           component: rico-es-load
       spec:
-        strategy:
-          type: Recreate
-        triggers:
-          - type: ConfigChange
         replicas: 1
         selector:
           name: '${INSTANCE_NAME}'
@@ -35,8 +31,6 @@ objects:
                 image: gcr.io/quantiply-edge-cloud/rico-elasticsearch-load-0.0.21:v1
                 #image: gcr.io/google_containers/busybox
                 #command: [ "/bin/sh", "-c", "env" ]
-                securityContext:
-                  privileged: true
                 env:
                   - name: "EXHIBITOR_SVC_NAME"
                     value: "svc-exhibitor-${ZK_INSTANCE_NAME}"
