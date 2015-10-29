@@ -8,10 +8,10 @@ metadata:
     tags: 'instant-app,kafka,samza,elasticsearch'
 objects:
   #---------------------------------------------------------------------------------
-    - kind: DeploymentConfig
+    - kind: ReplicationController
       apiVersion: v1
       metadata:
-        name: 'dc-${INSTANCE_NAME}'
+        name: 'rc-${INSTANCE_NAME}'
         labels:
           name: '${INSTANCE_NAME}'
           component: rico-es-load
