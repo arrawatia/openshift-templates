@@ -1,13 +1,13 @@
 kind: Template
 apiVersion: v1
 metadata:
-  name: spark-jupyter-zeppelin
+  name: sap-spark-notebook
   creationTimestamp: null
   annotations:
     description: 'Spark cluster with Jupyter and Zeppelin notebook.'
     tags: 'instant-app,spark'
 labels:
-  template: spark-jupyter-zeppelin
+  template: sap-spark-notebook
 
 parameters:
   - name: INSTANCE_NAME

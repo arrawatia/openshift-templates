@@ -1,13 +1,13 @@
 kind: Template
 apiVersion: v1
 metadata:
-  name: spark-jupyter-zeppelin
+  name: quantezza-spark-hana
   creationTimestamp: null
   annotations:
     description: 'Spark cluster with Jupyter and Zeppelin notebook.'
     tags: 'instant-app,spark'
 labels:
-  template: spark-jupyter-zeppelin
+  template: quantezza-spark-hana
 
 parameters:
   - name: INSTANCE_NAME
@@ -32,7 +32,6 @@ objects:
       name: '${INSTANCE_NAME}-spark-master'
       labels:
         component: spark
-        instance: '${INSTANCE_NAME}'
       annotations:
         description: "Route for application's http service"
     spec:
@@ -48,7 +47,6 @@ objects:
       labels:
         component: spark
         name: '${INSTANCE_NAME}-spark-master-ui'
-        instance: '${INSTANCE_NAME}'
     spec:
       ports:
         - port: 8080
@@ -66,7 +64,6 @@ objects:
       labels:
         component: spark
         name: '${INSTANCE_NAME}-spark-master'
-        instance: '${INSTANCE_NAME}'
     spec:
       ports:
         - port: 7077
@@ -82,7 +79,6 @@ objects:
       labels:
         name: '${INSTANCE_NAME}-spark-master'
         component: spark
-        instance: '${INSTANCE_NAME}'
     spec:
       strategy:
         type: Recreate
@@ -98,14 +94,13 @@ objects:
           labels:
             name: '${INSTANCE_NAME}-spark-master'
             component: spark
-            instance: '${INSTANCE_NAME}'
         spec:
           serviceAccount: quantezza
           containers:
             - name: '${INSTANCE_NAME}-spark-master'
               securityContext:
                 runAsUser: 0
-              image: gcr.io/quantiply-edge-cloud/spark-master-1.5.1:v2
+              image: gcr.io/quantiply-edge-cloud/spark-master-1.5.1:v1
               ports:
                 - containerPort: 7077
                 - containerPort: 8080
@@ -128,7 +123,6 @@ objects:
       labels:
         name: '${INSTANCE_NAME}-spark-driver'
         component: spark
-        instance: '${INSTANCE_NAME}'
     spec:
       strategy:
         type: Recreate
@@ -143,14 +137,13 @@ objects:
           labels:
             name: '${INSTANCE_NAME}-spark-driver'
             component: spark
-            instance: '${INSTANCE_NAME}'
         spec:
           serviceAccount: quantezza
           containers:
             - name: spark-driver
               securityContext:
                 runAsUser: 0
-              image: gcr.io/quantiply-edge-cloud/spark-driver-1.5.1:v2
+              image: gcr.io/quantiply-edge-cloud/spark-driver-1.5.1:v1
               env:
                 - name: SPARK_MASTER_SERVICE_HOST
                   value: '${INSTANCE_NAME}-spark-master'
@@ -171,7 +164,6 @@ objects:
       labels:
         name: '${INSTANCE_NAME}-spark-worker'
         component: spark
-        instance: '${INSTANCE_NAME}'
     spec:
       strategy:
         type: Recreate
@@ -186,14 +178,13 @@ objects:
           labels:
             name: '${INSTANCE_NAME}-spark-worker'
             component: spark
-            instance: '${INSTANCE_NAME}'
         spec:
           serviceAccount: quantezza
           containers:
             - name: spark-worker
               securityContext:
                 runAsUser: 0
-              image: gcr.io/quantiply-edge-cloud/spark-worker-1.5.1:v2
+              image: gcr.io/quantiply-edge-cloud/spark-worker-1.5.1:v1
               ports:
                 - containerPort: 8888
               env:
@@ -215,7 +206,6 @@ objects:
       name: '${INSTANCE_NAME}-spark-notebook'
       labels:
         component: spark
-        instance: '${INSTANCE_NAME}'
       annotations:
         description: "Route for application's http service"
     spec:
@@ -231,7 +221,6 @@ objects:
       labels:
         component: spark
         name: '${INSTANCE_NAME}-spark-notebook'
-        instance: '${INSTANCE_NAME}'
     spec:
       ports:
         - port: 8888
@@ -247,7 +236,6 @@ objects:
       labels:
         name: '${INSTANCE_NAME}-spark-notebook'
         component: spark
-        instance: '${INSTANCE_NAME}'
     spec:
       strategy:
         type: Recreate
@@ -262,14 +250,13 @@ objects:
           labels:
             name: '${INSTANCE_NAME}-spark-notebook'
             component: spark
-            instance: '${INSTANCE_NAME}'
         spec:
           serviceAccount: quantezza
           containers:
             - name: spark-notebook
               securityContext:
                 runAsUser: 0
-              image: gcr.io/quantiply-edge-cloud/spark-notebook-1.5.1:v2
+              image: gcr.io/quantiply-edge-cloud/spark-notebook-1.5.1:v1
               ports:
                 - containerPort: 8888
               env:
@@ -279,13 +266,7 @@ objects:
                   value: '7077'
                 - name: INSTANCE_ID
                   value: '${INSTANCE_NAME}'
-              imagePullPolicy: Always
-              volumeMounts:
-              - mountPath: /data
-                name: data
-          volumes:
-            - name: data
-              emptyDir: {}
+              imagePullPolicy: IfNotPresent
           restartPolicy: Always
           dnsPolicy: ClusterFirst
 
@@ -297,7 +278,6 @@ objects:
       name: '${INSTANCE_NAME}-spark-zeppelin'
       labels:
         component: spark
-        instance: '${INSTANCE_NAME}'
       annotations:
         description: "Route for application's http service"
     spec:
@@ -313,7 +293,6 @@ objects:
       labels:
         component: spark
         name: '${INSTANCE_NAME}-spark-zeppelin'
-        instance: '${INSTANCE_NAME}'
     spec:
       ports:
         - port: 8080
@@ -329,7 +308,6 @@ objects:
       labels:
         name: '${INSTANCE_NAME}-spark-zeppelin'
         component: spark
-        instance: '${INSTANCE_NAME}'
     spec:
       strategy:
         type: Recreate
@@ -344,14 +322,13 @@ objects:
           labels:
             name: '${INSTANCE_NAME}-spark-zeppelin'
             component: spark
-            instance: '${INSTANCE_NAME}'
         spec:
           serviceAccount: quantezza
           containers:
             - name: spark-zeppelin
               securityContext:
                 runAsUser: 0
-              image: gcr.io/quantiply-edge-cloud/spark-zeppelin-1.5.1:v2
+              image: gcr.io/quantiply-edge-cloud/spark-zeppelin-1.5.1:v3
               ports:
                 - containerPort: 8080
               env:
