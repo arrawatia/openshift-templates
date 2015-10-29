@@ -164,6 +164,63 @@ objects:
     - kind: Service
       apiVersion: v1
       metadata:
+        name: 'svc-registry-${KAFKA_INSTANCE_NAME}'
+        labels:
+          name: '${KAFKA_INSTANCE_NAME}'
+          component: schema-registry
+      spec:
+        ports:
+          - name: broker
+            protocol: TCP
+            port: 8081
+            targetPort: 8081
+        selector:
+          name: '${KAFKA_INSTANCE_NAME}'
+          component: schema-registry
+
+  #---------------------------------------------------------------------------------
+    - kind: DeploymentConfig
+      apiVersion: v1
+      metadata:
+        name: 'dc-registry-${KAFKA_INSTANCE_NAME}'
+        labels:
+          name: '${KAFKA_INSTANCE_NAME}'
+          component: schema-registry
+      spec:
+        strategy:
+          type: Recreate
+        triggers:
+          - type: ConfigChange
+        replicas: 1
+        selector:
+          name: '${KAFKA_INSTANCE_NAME}'
+          component: schema-registry
+        template:
+          metadata:
+            labels:
+              name: '${KAFKA_INSTANCE_NAME}'
+              component: schema-registry
+          spec:
+            serviceAccount: quantezza
+            containers:
+              - name: kafka-exhibitor
+                image: gcr.io/quantiply-edge-cloud/confluent-schema-registry-1.0:latest
+                securityContext:
+                  privileged: true
+                ports:
+                  - name: broker
+                    containerPort: 8081
+                env:
+                  - name: "EXHIBITOR_SVC_NAME"
+                    value: "svc-exhibitor-${ZK_INSTANCE_NAME}"
+                imagePullPolicy: Always
+            restartPolicy: Always
+            dnsPolicy: ClusterFirst
+
+    #---------------------------------------------------------------------------------
+    - kind: Service
+      apiVersion: v1
+      metadata:
         name: 'svc-http-${ELASTICSEARCH_INSTANCE_NAME}'
         labels:
           name: '${ELASTICSEARCH_INSTANCE_NAME}'
