@@ -41,18 +41,14 @@ objects:
           name: 'svc-exhibitor-${ZK_INSTANCE_NAME}'
 
   #---------------------------------------------------------------------------------
-    - kind: DeploymentConfig
+    - kind: ReplicationController
       apiVersion: v1
       metadata:
-        name: 'dc-${ZK_INSTANCE_NAME}'
+        name: 'rc-${ZK_INSTANCE_NAME}'
         labels:
           name: '${ZK_INSTANCE_NAME}'
           component: zookeeper
       spec:
-        strategy:
-          type: Recreate
-        triggers:
-          - type: ConfigChange
         replicas: 1
         selector:
           name: '${ZK_INSTANCE_NAME}'
@@ -136,7 +132,6 @@ objects:
               name: '${KAFKA_INSTANCE_NAME}'
               component: kafka
           spec:
-            serviceAccount: quantezza
             containers:
               - name: kafka-exhibitor
                 image: gcr.io/quantiply-edge-cloud/kafka-0.8.2.1:v2
@@ -187,10 +182,10 @@ objects:
           name: 'svc-registry-${KAFKA_INSTANCE_NAME}'
 
     #---------------------------------------------------------------------------------
-    - kind: DeploymentConfig
+    - kind: ReplicationController
       apiVersion: v1
       metadata:
-        name: 'dc-registry-${KAFKA_INSTANCE_NAME}'
+        name: 'rc-registry-${KAFKA_INSTANCE_NAME}'
         labels:
           name: '${KAFKA_INSTANCE_NAME}'
           component: schema-registry
