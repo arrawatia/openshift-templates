@@ -118,18 +118,14 @@ objects:
           component: kafka
 
   #---------------------------------------------------------------------------------
-    - kind: DeploymentConfig
+    - kind: ReplicationController
       apiVersion: v1
       metadata:
-        name: 'dc-${KAFKA_INSTANCE_NAME}'
+        name: 'rc-${KAFKA_INSTANCE_NAME}'
         labels:
           name: '${KAFKA_INSTANCE_NAME}'
           component: kafka
       spec:
-        strategy:
-          type: Recreate
-        triggers:
-          - type: ConfigChange
         replicas: 3
         selector:
           name: '${KAFKA_INSTANCE_NAME}'
@@ -143,15 +139,11 @@ objects:
             serviceAccount: quantezza
             containers:
               - name: kafka-exhibitor
-                image: gcr.io/quantiply-edge-cloud/kafka-0.8.2.1:v1
-                securityContext:
-                  runAsUser: 0
+                image: gcr.io/quantiply-edge-cloud/kafka-0.8.2.1:v2
                 ports:
                   - name: broker
                     containerPort: 9092
                 env:
-                  - name: KUBERNETES_TRUST_CERT
-                    value: "true"
                   - name: "ADVERTISED_PORT"
                     value: "9092"
                   - name: "EXHIBITOR_SVC_NAME"
