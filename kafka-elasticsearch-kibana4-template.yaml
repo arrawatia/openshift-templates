@@ -269,18 +269,14 @@ objects:
           name: 'svc-http-${ELASTICSEARCH_INSTANCE_NAME}'
 
   #---------------------------------------------------------------------------------
-    - kind: DeploymentConfig
+    - kind: ReplicationController
       apiVersion: v1
       metadata:
-        name: 'dc-${ELASTICSEARCH_INSTANCE_NAME}'
+        name: 'rc-${ELASTICSEARCH_INSTANCE_NAME}'
         labels:
           name: '${ELASTICSEARCH_INSTANCE_NAME}'
           component: elasticsearch
       spec:
-        strategy:
-          type: Recreate
-        triggers:
-          - type: ConfigChange
         replicas: 3
         selector:
           name: '${ELASTICSEARCH_INSTANCE_NAME}'
@@ -362,18 +358,14 @@ objects:
           name: 'svc-http-${KIBANA_INSTANCE_NAME}'
 
   #---------------------------------------------------------------------------------
-    - kind: DeploymentConfig
+    - kind: ReplicationController
       apiVersion: v1
       metadata:
-        name: 'dc-${KIBANA_INSTANCE_NAME}'
+        name: 'rc-${KIBANA_INSTANCE_NAME}'
         labels:
           name: '${KIBANA_INSTANCE_NAME}'
           component: kibana
       spec:
-        strategy:
-          type: Recreate
-        triggers:
-          - type: ConfigChange
         replicas: 1
         selector:
           name: '${KIBANA_INSTANCE_NAME}'
