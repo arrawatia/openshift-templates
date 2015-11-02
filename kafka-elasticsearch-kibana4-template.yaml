@@ -190,10 +190,6 @@ objects:
           name: '${KAFKA_INSTANCE_NAME}'
           component: schema-registry
       spec:
-        strategy:
-          type: Recreate
-        triggers:
-          - type: ConfigChange
         replicas: 1
         selector:
           name: '${KAFKA_INSTANCE_NAME}'
@@ -204,18 +200,83 @@ objects:
               name: '${KAFKA_INSTANCE_NAME}'
               component: schema-registry
           spec:
-            serviceAccount: quantezza
             containers:
               - name: confluent-schema-registry
                 image: gcr.io/quantiply-edge-cloud/confluent-schema-registry-1.0:latest
-                securityContext:
-                  privileged: true
                 ports:
                   - name: registry
                     containerPort: 8081
                 env:
                   - name: "EXHIBITOR_SVC_NAME"
                     value: "svc-exhibitor-${ZK_INSTANCE_NAME}"
+                imagePullPolicy: Always
+            restartPolicy: Always
+            dnsPolicy: ClusterFirst
+
+    #---------------------------------------------------------------------------------
+    - kind: Service
+      apiVersion: v1
+      metadata:
+        name: 'svc-proxy-${KAFKA_INSTANCE_NAME}'
+        labels:
+          name: '${KAFKA_INSTANCE_NAME}'
+          component: rest-proxy
+      spec:
+        ports:
+          - name: broker
+            protocol: TCP
+            port: 8081
+            targetPort: 8081
+        selector:
+          name: '${KAFKA_INSTANCE_NAME}'
+          component: rest-proxy
+
+    #---------------------------------------------------------------------------------
+    - kind: Route
+      apiVersion: v1
+      metadata:
+        name: 'proxy-${KAFKA_INSTANCE_NAME}'
+        annotations:
+          description: "Confluent Kafka Rest Proxy for ${KAFKA_INSTANCE_NAME}"
+        labels:
+          name: '${KAFKA_INSTANCE_NAME}'
+          component: rest-proxy
+      spec:
+        host: '${APPLICATION_DOMAIN}'
+        to:
+          kind: Service
+          name: 'svc-proxy-${KAFKA_INSTANCE_NAME}'
+
+    #---------------------------------------------------------------------------------
+    - kind: ReplicationController
+      apiVersion: v1
+      metadata:
+        name: 'rc-proxy-${KAFKA_INSTANCE_NAME}'
+        labels:
+          name: '${KAFKA_INSTANCE_NAME}'
+          component: rest-proxy
+      spec:
+        replicas: 1
+        selector:
+          name: '${KAFKA_INSTANCE_NAME}'
+          component: rest-proxy
+        template:
+          metadata:
+            labels:
+              name: '${KAFKA_INSTANCE_NAME}'
+              component: rest-proxy
+          spec:
+            containers:
+              - name: confluent-rest-proxy
+                image: gcr.io/quantiply-edge-cloud/confluent-rest-proxy-1.0:latest
+                ports:
+                  - name: proxy
+                    containerPort: 8081
+                env:
+                  - name: EXHIBITOR_SVC_NAME
+                    value: "svc-exhibitor-${ZK_INSTANCE_NAME}"
+                  - name: REGISTRY_SVC_NAME
+                    value: "svc-proxy-${KAFKA_INSTANCE_NAME}"
                 imagePullPolicy: Always
             restartPolicy: Always
             dnsPolicy: ClusterFirst
