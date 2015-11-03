@@ -202,14 +202,14 @@ objects:
           spec:
             containers:
               - name: confluent-schema-registry
-                image: gcr.io/quantiply-edge-cloud/confluent-schema-registry-1.0:latest
+                image: gcr.io/quantiply-edge-cloud/confluent-schema-registry-1.0:v1
                 ports:
                   - name: registry
                     containerPort: 8081
                 env:
                   - name: "EXHIBITOR_SVC_NAME"
                     value: "svc-exhibitor-${ZK_INSTANCE_NAME}"
-                imagePullPolicy: Always
+                imagePullPolicy: IfNotPresent
             restartPolicy: Always
             dnsPolicy: ClusterFirst
 
@@ -225,8 +225,8 @@ objects:
         ports:
           - name: broker
             protocol: TCP
-            port: 8081
-            targetPort: 8081
+            port: 8082
+            targetPort: 8082
         selector:
           name: '${KAFKA_INSTANCE_NAME}'
           component: rest-proxy
@@ -268,16 +268,16 @@ objects:
           spec:
             containers:
               - name: confluent-rest-proxy
-                image: gcr.io/quantiply-edge-cloud/confluent-rest-proxy-1.0:latest
+                image: gcr.io/quantiply-edge-cloud/confluent-rest-proxy-1.0:v1
                 ports:
                   - name: proxy
-                    containerPort: 8081
+                    containerPort: 8082
                 env:
                   - name: EXHIBITOR_SVC_NAME
                     value: "svc-exhibitor-${ZK_INSTANCE_NAME}"
                   - name: REGISTRY_SVC_NAME
                     value: "svc-proxy-${KAFKA_INSTANCE_NAME}"
-                imagePullPolicy: Always
+                imagePullPolicy: IfNotPresent
             restartPolicy: Always
             dnsPolicy: ClusterFirst
 
