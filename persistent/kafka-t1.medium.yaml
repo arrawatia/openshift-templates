@@ -1,0 +1,300 @@
+kind: Template
+apiVersion: v1
+metadata:
+  name: kafka-t1.medium
+  annotations:
+    description: 'Kafka'
+    iconClass: icon-database
+    tags: 'instant-app,kakfa'
+objects:
+    #---------------------------------------------------------------------------------
+    - kind: Service
+      apiVersion: v1
+      metadata:
+        name: 'svc-exhibitor-${ZK_INSTANCE_NAME}'
+        labels:
+          name: '${ZK_INSTANCE_NAME}'
+          component: zookeeper
+      spec:
+        ports:
+          - name: exhibitor
+            protocol: TCP
+            port: 8181
+            targetPort: 8181
+        selector:
+          name: '${ZK_INSTANCE_NAME}'
+          component: zookeeper
+    #---------------------------------------------------------------------------------
+    - kind: Route
+      apiVersion: v1
+      metadata:
+        name: '${ZK_INSTANCE_NAME}'
+        annotations:
+          description: "Route for ${ZK_INSTANCE_NAME} Exhibitor HTTP API"
+        labels:
+          name: '${ZK_INSTANCE_NAME}'
+          component: zookeeper
+      spec:
+        host: '${APPLICATION_DOMAIN}'
+        to:
+          kind: Service
+          name: 'svc-exhibitor-${ZK_INSTANCE_NAME}'
+
+  #---------------------------------------------------------------------------------
+    - kind: ReplicationController
+      apiVersion: v1
+      metadata:
+        name: 'rc-${ZK_INSTANCE_NAME}'
+        labels:
+          name: '${ZK_INSTANCE_NAME}'
+          component: zookeeper
+      spec:
+        replicas: 1
+        selector:
+          name: '${ZK_INSTANCE_NAME}'
+          component: zookeeper
+        template:
+          metadata:
+            labels:
+              name: '${ZK_INSTANCE_NAME}'
+              component: zookeeper
+          spec:
+            serviceAccount: quantezza
+            containers:
+              - name: zk-exhibitor
+                image: gcr.io/quantiply-edge-cloud/zk-exhibitor-3.4.6:v1
+                securityContext:
+                  runAsUser: 0
+                ports:
+                  - name: client
+                    containerPort: 2181
+                  - name: followers
+                    containerPort: 2888
+                  - name: election
+                    containerPort: 3888
+                  - name: exhibitor
+                    containerPort: 8181
+                env:
+                  - name: KUBERNETES_TRUST_CERT
+                    value: "true"
+                  - name: KUBERNETES_CA_CERTIFICATE_FILE
+                    value: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
+                  - name: CONFIG_TYPE
+                    value: ZK
+                  - name: KUBERNETES_NAMESPACE
+                    valueFrom:
+                      fieldRef:
+                        fieldPath: metadata.namespace
+                  - name: ZKCFG_ZPATH
+                    value: '/$(KUBERNETES_NAMESPACE)/exhibitor/${ZK_INSTANCE_NAME}'
+                  - name: ZKCFG_CONNECT
+                    value: "zookeeper-1.${BOOTSTRAP_ZK_NAMESPACE}.svc.cluster.local:2181,zookeeper-2.${BOOTSTRAP_ZK_NAMESPACE}.svc.cluster.local:2181,zookeeper-3.${BOOTSTRAP_ZK_NAMESPACE}.svc.cluster.local:2181"
+                  - name: CONFIG_CHECK_MS
+                    value: "10000"
+                imagePullPolicy: IfNotPresent
+            restartPolicy: Always
+            dnsPolicy: ClusterFirst
+  
+    #---------------------------------------------------------------------------------
+    - kind: Service
+      apiVersion: v1
+      metadata:
+        name: 'svc-broker-${KAFKA_INSTANCE_NAME}'
+        labels:
+          name: '${KAFKA_INSTANCE_NAME}'
+          component: kafka
+      spec:
+        ports:
+          - name: broker
+            protocol: TCP
+            port: 9092
+            targetPort: 9092
+        selector:
+          name: '${KAFKA_INSTANCE_NAME}'
+          component: kafka
+
+  #---------------------------------------------------------------------------------
+    - kind: ReplicationController
+      apiVersion: v1
+      metadata:
+        name: 'rc-${KAFKA_INSTANCE_NAME}'
+        labels:
+          name: '${KAFKA_INSTANCE_NAME}'
+          component: kafka
+      spec:
+        replicas: 3
+        selector:
+          name: '${KAFKA_INSTANCE_NAME}'
+          component: kafka
+        template:
+          metadata:
+            labels:
+              name: '${KAFKA_INSTANCE_NAME}'
+              component: kafka
+          spec:
+            containers:
+              - name: kafka-exhibitor
+                image: gcr.io/quantiply-edge-cloud/kafka-0.8.2.1:v2
+                ports:
+                  - name: broker
+                    containerPort: 9092
+                env:
+                  - name: "ADVERTISED_PORT"
+                    value: "9092"
+                  - name: "EXHIBITOR_SVC_NAME"
+                    value: "svc-exhibitor-${ZK_INSTANCE_NAME}"
+                imagePullPolicy: IfNotPresent
+            restartPolicy: Always
+            dnsPolicy: ClusterFirst
+
+    #---------------------------------------------------------------------------------
+    - kind: Service
+      apiVersion: v1
+      metadata:
+        name: 'svc-registry-${KAFKA_INSTANCE_NAME}'
+        labels:
+          name: '${KAFKA_INSTANCE_NAME}'
+          component: schema-registry
+      spec:
+        ports:
+          - name: broker
+            protocol: TCP
+            port: 8081
+            targetPort: 8081
+        selector:
+          name: '${KAFKA_INSTANCE_NAME}'
+          component: schema-registry
+
+    #---------------------------------------------------------------------------------
+    - kind: Route
+      apiVersion: v1
+      metadata:
+        name: 'registry-${KAFKA_INSTANCE_NAME}'
+        annotations:
+          description: "Route for Confluent Schema Registry for ${KAFKA_INSTANCE_NAME}"
+        labels:
+          name: '${KAFKA_INSTANCE_NAME}'
+          component: schema-registry
+      spec:
+        host: '${APPLICATION_DOMAIN}'
+        to:
+          kind: Service
+          name: 'svc-registry-${KAFKA_INSTANCE_NAME}'
+
+    #---------------------------------------------------------------------------------
+    - kind: ReplicationController
+      apiVersion: v1
+      metadata:
+        name: 'rc-registry-${KAFKA_INSTANCE_NAME}'
+        labels:
+          name: '${KAFKA_INSTANCE_NAME}'
+          component: schema-registry
+      spec:
+        replicas: 1
+        selector:
+          name: '${KAFKA_INSTANCE_NAME}'
+          component: schema-registry
+        template:
+          metadata:
+            labels:
+              name: '${KAFKA_INSTANCE_NAME}'
+              component: schema-registry
+          spec:
+            containers:
+              - name: confluent-schema-registry
+                image: gcr.io/quantiply-edge-cloud/confluent-schema-registry-1.0:v1
+                ports:
+                  - name: registry
+                    containerPort: 8081
+                env:
+                  - name: "EXHIBITOR_SVC_NAME"
+                    value: "svc-exhibitor-${ZK_INSTANCE_NAME}"
+                imagePullPolicy: IfNotPresent
+            restartPolicy: Always
+            dnsPolicy: ClusterFirst
+
+    #---------------------------------------------------------------------------------
+    - kind: Service
+      apiVersion: v1
+      metadata:
+        name: 'svc-proxy-${KAFKA_INSTANCE_NAME}'
+        labels:
+          name: '${KAFKA_INSTANCE_NAME}'
+          component: rest-proxy
+      spec:
+        ports:
+          - name: broker
+            protocol: TCP
+            port: 8082
+            targetPort: 8082
+        selector:
+          name: '${KAFKA_INSTANCE_NAME}'
+          component: rest-proxy
+
+    #---------------------------------------------------------------------------------
+    - kind: Route
+      apiVersion: v1
+      metadata:
+        name: 'proxy-${KAFKA_INSTANCE_NAME}'
+        annotations:
+          description: "Confluent Kafka Rest Proxy for ${KAFKA_INSTANCE_NAME}"
+        labels:
+          name: '${KAFKA_INSTANCE_NAME}'
+          component: rest-proxy
+      spec:
+        host: '${APPLICATION_DOMAIN}'
+        to:
+          kind: Service
+          name: 'svc-proxy-${KAFKA_INSTANCE_NAME}'
+
+    #---------------------------------------------------------------------------------
+    - kind: ReplicationController
+      apiVersion: v1
+      metadata:
+        name: 'rc-proxy-${KAFKA_INSTANCE_NAME}'
+        labels:
+          name: '${KAFKA_INSTANCE_NAME}'
+          component: rest-proxy
+      spec:
+        replicas: 1
+        selector:
+          name: '${KAFKA_INSTANCE_NAME}'
+          component: rest-proxy
+        template:
+          metadata:
+            labels:
+              name: '${KAFKA_INSTANCE_NAME}'
+              component: rest-proxy
+          spec:
+            containers:
+              - name: confluent-rest-proxy
+                image: gcr.io/quantiply-edge-cloud/confluent-rest-proxy-1.0:v1
+                ports:
+                  - name: proxy
+                    containerPort: 8082
+                env:
+                  - name: EXHIBITOR_SVC_NAME
+                    value: "svc-exhibitor-${ZK_INSTANCE_NAME}"
+                  - name: REGISTRY_SVC_NAME
+                    value: "svc-proxy-${KAFKA_INSTANCE_NAME}"
+                imagePullPolicy: IfNotPresent
+            restartPolicy: Always
+            dnsPolicy: ClusterFirst
+
+parameters:
+  - name: APPLICATION_DOMAIN
+    description: "The exposed hostname that will route to the ZK cluster, if left blank a value will be defaulted."
+    value: ""
+  - name: BOOTSTRAP_ZK_NAMESPACE
+    description: Namespace that bootstrap ZK cluster is running in
+    value: default
+  - name: ZK_INSTANCE_NAME
+    description: ZooKeeper instance name
+    required: true
+    value: zk
+  - name: KAFKA_INSTANCE_NAME
+    description: Kafka instance name
+    required: true
+    value: kafka
+labels:
+  template: kafka-t1.medium
