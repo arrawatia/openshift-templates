@@ -197,7 +197,7 @@ parameters:
   - name: ZOOKEEPER_IMAGE
     displayName: Zookeeper Docker Image
     description: The name of Zookeeper Docker image to use
-    value: quantezza/k8s-zookeeper:latest
+    value: gcr.io/quantiply-edge-cloud/zookeeper-3.4.6:v1
 
 labels:
   template: bootstrap-zookeeper
