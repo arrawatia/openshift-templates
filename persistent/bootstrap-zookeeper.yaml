@@ -1,0 +1,267 @@
+kind: Template
+apiVersion: v1
+metadata:
+  name: bootstrap-zookeeper
+  annotations:
+    description: Replicated 3-node Zookeeper 3.4.6 cluster
+    iconClass: icon-database
+    tags: 'database,zookeeper'
+
+objects:
+
+  - kind: Service
+    apiVersion: v1
+    metadata:
+      name: zookeeper
+      labels:
+        name: zookeeper
+    spec:
+      ports:
+        - name: client
+          port: 2181
+          targetPort: 2181
+      selector:
+        name: zookeeper
+      type: ClusterIP
+      sessionAffinity: None
+
+  - kind: Service
+    apiVersion: v1
+    metadata:
+      name: zookeeper-1
+      labels:
+        name: zookeeper-1
+    spec:
+      ports:
+        - name: client
+          port: 2181
+          targetPort: 2181
+        - name: followers
+          port: 2888
+          targetPort: 2888
+        - name: election
+          port: 3888
+          targetPort: 3888
+      selector:
+        server-id: '1'
+      type: ClusterIP
+      sessionAffinity: None
+
+  - kind: Service
+    apiVersion: v1
+    metadata:
+      name: zookeeper-2
+      labels:
+        name: zookeeper-2
+    spec:
+      ports:
+        - name: client
+          port: 2181
+          targetPort: 2181
+        - name: followers
+          port: 2888
+          targetPort: 2888
+        - name: election
+          port: 3888
+          targetPort: 3888
+      selector:
+        server-id: '2'
+      type: ClusterIP
+      sessionAffinity: None
+
+  - kind: Service
+    apiVersion: v1
+    metadata:
+      name: zookeeper-3
+      labels:
+        name: zookeeper-3
+    spec:
+      ports:
+        - name: client
+          port: 2181
+          targetPort: 2181
+        - name: followers
+          port: 2888
+          targetPort: 2888
+        - name: election
+          port: 3888
+          targetPort: 3888
+      selector:
+        server-id: '3'
+      type: ClusterIP
+      sessionAffinity: None
+
+  - kind: PersistentVolumeClaim
+    apiVersion: v1
+    metadata:
+      name: zookeeper-1
+      labels:
+        name: zookeeper
+    spec:
+      accessModes:
+      - ReadWriteMany
+      resources:
+        requests:
+          storage: "${VOLUME_CAPACITY}"
+
+  - kind: ReplicationController
+    apiVersion: v1
+    metadata:
+      name: zookeeper-1
+      labels:
+        name: zookeeper
+    spec:
+      replicas: 1
+      selector:
+        name: zookeeper
+        server-id: '1'
+      template:
+        metadata:
+          labels:
+            name: zookeeper
+            server-id: '1'
+        spec:
+          containers:
+            - name: server
+              image: '${ZOOKEEPER_IMAGE}'
+              ports:
+                - containerPort: 2181
+                - containerPort: 2888
+                - containerPort: 3888
+              env:
+                - name: SERVER_ID
+                  value: '1'
+              terminationMessagePath: /dev/termination-log
+              imagePullPolicy: IfNotPresent
+              securityContext:
+                privileged: false
+              volumeMounts:
+                - name: zk-server-data
+                  mountPath: /opt/zookeeper/data
+          volumes:
+            - name: zk-server-data
+              persistentVolumeClaim:
+                claimName: zookeeper-1
+          restartPolicy: Always
+          dnsPolicy: ClusterFirst
+
+  - kind: PersistentVolumeClaim
+    apiVersion: v1
+    metadata:
+      name: zookeeper-2
+      labels:
+        name: zookeeper
+    spec:
+      accessModes:
+      - ReadWriteMany
+      resources:
+        requests:
+          storage: "${VOLUME_CAPACITY}"
+
+  - kind: ReplicationController
+    apiVersion: v1
+    metadata:
+      name: zookeeper-2
+      labels:
+        name: zookeeper
+    spec:
+      replicas: 1
+      selector:
+        name: zookeeper
+        server-id: '2'
+      template:
+        metadata:
+          labels:
+            name: zookeeper
+            server-id: '2'
+        spec:
+          containers:
+            - name: server
+              image: '${ZOOKEEPER_IMAGE}'
+              ports:
+                - containerPort: 2181
+                - containerPort: 2888
+                - containerPort: 3888
+              env:
+                - name: SERVER_ID
+                  value: '2'
+              terminationMessagePath: /dev/termination-log
+              imagePullPolicy: IfNotPresent
+              securityContext:
+                privileged: false
+              volumeMounts:
+                - name: zk-server-data
+                  mountPath: /opt/zookeeper/data
+          volumes:
+            - name: zk-server-data
+              persistentVolumeClaim:
+                claimName: zookeeper-2
+          restartPolicy: Always
+          dnsPolicy: ClusterFirst
+
+  - kind: PersistentVolumeClaim
+    apiVersion: v1
+    metadata:
+      name: zookeeper-3
+      labels:
+        name: zookeeper
+    spec:
+      accessModes:
+      - ReadWriteMany
+      resources:
+        requests:
+          storage: "${VOLUME_CAPACITY}"
+
+  - kind: ReplicationController
+    apiVersion: v1
+    metadata:
+      name: zookeeper-3
+      labels:
+        name: zookeeper
+    spec:
+      replicas: 1
+      selector:
+        name: zookeeper
+        server-id: '3'
+      template:
+        metadata:
+          labels:
+            name: zookeeper
+            server-id: '3'
+        spec:
+          containers:
+            - name: server
+              image: '${ZOOKEEPER_IMAGE}'
+              ports:
+                - containerPort: 2181
+                - containerPort: 2888
+                - containerPort: 3888
+              env:
+                - name: SERVER_ID
+                  value: '3'
+              terminationMessagePath: /dev/termination-log
+              imagePullPolicy: IfNotPresent
+              securityContext:
+                privileged: false
+              volumeMounts:
+                - name: zk-server-data
+                  mountPath: /opt/zookeeper/data
+          volumes:
+            - name: zk-server-data
+              persistentVolumeClaim:
+                claimName: zookeeper-3
+          restartPolicy: Always
+          dnsPolicy: ClusterFirst
+
+parameters:
+  - name: ZOOKEEPER_IMAGE
+    displayName: Zookeeper Docker Image
+    description: The name of Zookeeper Docker image to use
+    value: gcr.io/quantiply-edge-cloud/zookeeper-3.4.6:v1
+  - name: VOLUME_CAPACITY
+    description: "Volume space available for data, e.g. 512Mi, 2Gi"
+    required: true
+    value: 512Mi
+
+labels:
+  template: bootstrap-zookeeper
