@@ -1,0 +1,400 @@
+kind: Template
+apiVersion: v1
+metadata:
+  name: spark-jupyter-zeppelin-medium
+  creationTimestamp: null
+  annotations:
+    description: 'Spark cluster with Jupyter and Zeppelin notebook.'
+    tags: 'instant-app,spark'
+labels:
+  template: spark-jupyter-zeppelin-medium
+
+parameters:
+  - name: INSTANCE_NAME
+    description: Instance name
+    generate: expression
+    from: '[a-z]{5}'
+    required: true
+  - name: APPLICATION_DOMAIN
+    description: Host name
+    value: ''
+
+#---------------------------------------------------------------------------------
+
+objects:
+
+# WEB CONSOLE
+#---------------------------------------------------------------------------------
+  - kind: Route
+    apiVersion: v1
+    metadata:
+      name: '${INSTANCE_NAME}-spark-master'
+      labels:
+        component: spark
+        instance: '${INSTANCE_NAME}'
+      annotations:
+        description: "Route for application's http service"
+    spec:
+      host: '${APPLICATION_DOMAIN}'
+      to:
+        kind: Service
+        name: '${INSTANCE_NAME}-spark-master-ui'
+
+  - kind: Service
+    apiVersion: v1
+    metadata:
+      name: '${INSTANCE_NAME}-spark-master-ui'
+      labels:
+        component: spark
+        name: '${INSTANCE_NAME}-spark-master-ui'
+        instance: '${INSTANCE_NAME}'
+    spec:
+      ports:
+        - port: 8080
+          targetPort: 8080
+      selector:
+        name: '${INSTANCE_NAME}-spark-master'
+
+
+# MASTER
+#---------------------------------------------------------------------------------
+  - kind: Service
+    apiVersion: v1
+    metadata:
+      name: '${INSTANCE_NAME}-spark-master'
+      labels:
+        component: spark
+        name: '${INSTANCE_NAME}-spark-master'
+        instance: '${INSTANCE_NAME}'
+    spec:
+      ports:
+        - port: 7077
+          targetPort: 7077
+      selector:
+        name: '${INSTANCE_NAME}-spark-master'
+
+
+  - kind: DeploymentConfig
+    apiVersion: v1
+    metadata:
+      name: '${INSTANCE_NAME}-spark-master'
+      labels:
+        name: '${INSTANCE_NAME}-spark-master'
+        component: spark
+        instance: '${INSTANCE_NAME}'
+    spec:
+      strategy:
+        type: Recreate
+      triggers:
+        - type: ConfigChange
+      replicas: 1
+      selector:
+        name: '${INSTANCE_NAME}-spark-master'
+        component: spark
+      template:
+        metadata:
+          name: '${INSTANCE_NAME}-spark-master'
+          labels:
+            name: '${INSTANCE_NAME}-spark-master'
+            component: spark
+            instance: '${INSTANCE_NAME}'
+        spec:
+          serviceAccount: quantezza
+          containers:
+            - name: '${INSTANCE_NAME}-spark-master'
+              securityContext:
+                runAsUser: 0
+              image: gcr.io/quantiply-edge-cloud/spark-master-1.5.1:v2
+              ports:
+                - containerPort: 7077
+                - containerPort: 8080
+              env:
+                - name: INSTANCE_ID
+                  value: '${INSTANCE_NAME}'
+              imagePullPolicy: IfNotPresent
+              resources:
+                requests:
+                  cpu: 100m
+                  memory: 2Gi
+                limits:
+                  cpu: 1000m
+                  memory: 2Gi
+
+          restartPolicy: Always
+          dnsPolicy: ClusterFirst
+
+
+# DRIVER
+#---------------------------------------------------------------------------------
+
+  - kind: DeploymentConfig
+    apiVersion: v1
+    metadata:
+      name: '${INSTANCE_NAME}-spark-driver'
+      labels:
+        name: '${INSTANCE_NAME}-spark-driver'
+        component: spark
+        instance: '${INSTANCE_NAME}'
+    spec:
+      strategy:
+        type: Recreate
+      triggers:
+        - type: ConfigChange
+      replicas: 1
+      selector:
+        name: '${INSTANCE_NAME}-spark-driver'
+        component: spark
+      template:
+        metadata:
+          labels:
+            name: '${INSTANCE_NAME}-spark-driver'
+            component: spark
+            instance: '${INSTANCE_NAME}'
+        spec:
+          serviceAccount: quantezza
+          containers:
+            - name: spark-driver
+              securityContext:
+                runAsUser: 0
+              image: gcr.io/quantiply-edge-cloud/spark-driver-1.5.1:v2
+              env:
+                - name: SPARK_MASTER_SERVICE_HOST
+                  value: '${INSTANCE_NAME}-spark-master'
+                - name: SPARK_MASTER_SERVICE_PORT
+                  value: '7077'
+                - name: INSTANCE_ID
+                  value: '${INSTANCE_NAME}'
+              imagePullPolicy: IfNotPresent
+              resources:
+                requests:
+                  cpu: 100m
+                  memory: 2Gi
+                limits:
+                  cpu: 1000m
+                  memory: 2Gi
+          restartPolicy: Always
+          dnsPolicy: ClusterFirst
+
+# WORKERS
+#---------------------------------------------------------------------------------
+  - kind: DeploymentConfig
+    apiVersion: v1
+    metadata:
+      name: '${INSTANCE_NAME}-spark-worker'
+      labels:
+        name: '${INSTANCE_NAME}-spark-worker'
+        component: spark
+        instance: '${INSTANCE_NAME}'
+    spec:
+      strategy:
+        type: Recreate
+      triggers:
+        - type: ConfigChange
+      replicas: 2
+      selector:
+        name: '${INSTANCE_NAME}-spark-worker'
+        component: spark
+      template:
+        metadata:
+          labels:
+            name: '${INSTANCE_NAME}-spark-worker'
+            component: spark
+            instance: '${INSTANCE_NAME}'
+        spec:
+          serviceAccount: quantezza
+          containers:
+            - name: spark-worker
+              securityContext:
+                runAsUser: 0
+              image: gcr.io/quantiply-edge-cloud/spark-worker-1.5.1:v2
+              ports:
+                - containerPort: 8888
+              env:
+                - name: SPARK_MASTER_SERVICE_HOST
+                  value: '${INSTANCE_NAME}-spark-master'
+                - name: SPARK_MASTER_SERVICE_PORT
+                  value: '7077'
+                - name: INSTANCE_ID
+                  value: '${INSTANCE_NAME}'
+                  resources:
+                    requests:
+                      cpu: 2000m
+                      memory: 2Gi
+                    limits:
+                      cpu: 2000m
+                      memory: 4Gi
+              imagePullPolicy: IfNotPresent
+          restartPolicy: Always
+          dnsPolicy: ClusterFirst
+
+# PYTHON NOTEBOOK
+#---------------------------------------------------------------------------------
+  - kind: Route
+    apiVersion: v1
+    metadata:
+      name: '${INSTANCE_NAME}-spark-notebook'
+      labels:
+        component: spark
+        instance: '${INSTANCE_NAME}'
+      annotations:
+        description: "Route for application's http service"
+    spec:
+      host: '${APPLICATION_DOMAIN}'
+      to:
+        kind: Service
+        name: '${INSTANCE_NAME}-spark-notebook'
+
+  - kind: Service
+    apiVersion: v1
+    metadata:
+      name: '${INSTANCE_NAME}-spark-notebook'
+      labels:
+        component: spark
+        name: '${INSTANCE_NAME}-spark-notebook'
+        instance: '${INSTANCE_NAME}'
+    spec:
+      ports:
+        - port: 8888
+          targetPort: 8888
+      selector:
+        name: '${INSTANCE_NAME}-spark-notebook'
+
+
+  - kind: DeploymentConfig
+    apiVersion: v1
+    metadata:
+      name: '${INSTANCE_NAME}-spark-notebook'
+      labels:
+        name: '${INSTANCE_NAME}-spark-notebook'
+        component: spark
+        instance: '${INSTANCE_NAME}'
+    spec:
+      strategy:
+        type: Recreate
+      triggers:
+        - type: ConfigChange
+      replicas: 1
+      selector:
+        name: '${INSTANCE_NAME}-spark-notebook'
+        component: spark
+      template:
+        metadata:
+          labels:
+            name: '${INSTANCE_NAME}-spark-notebook'
+            component: spark
+            instance: '${INSTANCE_NAME}'
+        spec:
+          serviceAccount: quantezza
+          containers:
+            - name: spark-notebook
+              securityContext:
+                runAsUser: 0
+              image: gcr.io/quantiply-edge-cloud/spark-notebook-1.5.1:v2
+              ports:
+                - containerPort: 8888
+              env:
+                - name: SPARK_MASTER_SERVICE_HOST
+                  value: '${INSTANCE_NAME}-spark-master'
+                - name: SPARK_MASTER_SERVICE_PORT
+                  value: '7077'
+                - name: INSTANCE_ID
+                  value: '${INSTANCE_NAME}'
+              imagePullPolicy: Always
+              volumeMounts:
+              - mountPath: /data
+                name: data
+              resources:
+                requests:
+                  cpu: 4000m
+                  memory: 6Gi
+                limits:
+                  cpu: 5000m
+                  memory: 6Gi
+          volumes:
+            - name: data
+              emptyDir: {}
+          restartPolicy: Always
+          dnsPolicy: ClusterFirst
+
+# ZEPPELIN NOTEBOOK
+#---------------------------------------------------------------------------------
+  - kind: Route
+    apiVersion: v1
+    metadata:
+      name: '${INSTANCE_NAME}-spark-zeppelin'
+      labels:
+        component: spark
+        instance: '${INSTANCE_NAME}'
+      annotations:
+        description: "Route for application's http service"
+    spec:
+      host: '${APPLICATION_DOMAIN}'
+      to:
+        kind: Service
+        name: '${INSTANCE_NAME}-spark-zeppelin'
+
+  - kind: Service
+    apiVersion: v1
+    metadata:
+      name: '${INSTANCE_NAME}-spark-zeppelin'
+      labels:
+        component: spark
+        name: '${INSTANCE_NAME}-spark-zeppelin'
+        instance: '${INSTANCE_NAME}'
+    spec:
+      ports:
+        - port: 8080
+          targetPort: 8080
+      selector:
+        name: '${INSTANCE_NAME}-spark-zeppelin'
+
+
+  - kind: DeploymentConfig
+    apiVersion: v1
+    metadata:
+      name: '${INSTANCE_NAME}-spark-zeppelin'
+      labels:
+        name: '${INSTANCE_NAME}-spark-zeppelin'
+        component: spark
+        instance: '${INSTANCE_NAME}'
+    spec:
+      strategy:
+        type: Recreate
+      triggers:
+        - type: ConfigChange
+      replicas: 1
+      selector:
+        name: '${INSTANCE_NAME}-spark-zeppelin'
+        component: spark
+      template:
+        metadata:
+          labels:
+            name: '${INSTANCE_NAME}-spark-zeppelin'
+            component: spark
+            instance: '${INSTANCE_NAME}'
+        spec:
+          serviceAccount: quantezza
+          containers:
+            - name: spark-zeppelin
+              securityContext:
+                runAsUser: 0
+              image: gcr.io/quantiply-edge-cloud/spark-zeppelin-1.5.1:v2
+              ports:
+                - containerPort: 8080
+              env:
+                - name: SPARK_MASTER_SERVICE_HOST
+                  value: '${INSTANCE_NAME}-spark-master'
+                - name: SPARK_MASTER_SERVICE_PORT
+                  value: '7077'
+                - name: INSTANCE_ID
+                  value: '${INSTANCE_NAME}'
+              imagePullPolicy: IfNotPresent
+              resources:
+                requests:
+                  cpu: 1000m
+                  memory: 4Gi
+                limits:
+                  cpu: 1000m
+                  memory: 4Gi
+          restartPolicy: Always
+          dnsPolicy: ClusterFirst

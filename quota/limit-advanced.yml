@@ -1,0 +1,32 @@
+# https://docs.openshift.org/latest/dev_guide/limits.html#viewing-limits
+
+apiVersion: v1
+kind: LimitRange
+metadata:
+  name: limits
+spec:
+  limits:
+
+  - type: Pod
+    max: # The maximum amount of cpu that a pod can consume on a node across all containers.
+      cpu: '10'
+      memory: 15Gi
+    min: # The minimum amount of cpu that a pod can consume on a node across all containers.
+      cpu: 200m
+      memory: 6Mi
+
+  - type: Container
+    default: # The default amount of cpu that a container will be limited to use if not specified.
+      cpu: 300m
+      memory: 200Mi
+    defaultRequest: # The default amount of cpu that a container will request to use if not specified.
+      cpu: 200m
+      memory: 100Mi
+    max: # The maximum amount of cpu that a single container in a pod can consume.
+      cpu: '10'
+      memory: 10Gi
+    maxLimitRequestRatio: # The maximum amount of cpu burst that a container can make as a ratio of its limit over request.
+      cpu: '10'
+    min: # The minimum amount of cpu that a single container in a pod can consume.
+      cpu: 100m
+      memory: 4Mi

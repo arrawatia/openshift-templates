@@ -1,0 +1,147 @@
+kind: Template
+apiVersion: v1
+metadata:
+  name: elasticsearch-persistent
+  annotations:
+    description: 'Elasticsearch database service, without persistent storage.'
+    iconClass: icon-database
+    tags: 'instant-app,database,elasticsearch'
+objects:
+    #---------------------------------------------------------------------------------
+    - kind: Service
+      apiVersion: v1
+      metadata:
+        name: 'es-http-${INSTANCE_NAME}'
+        labels:
+          name: '${INSTANCE_NAME}'
+          component: elasticsearch
+      spec:
+        ports:
+          - name: es-http
+            port: 9200
+            targetPort: 9200
+        selector:
+          name: 'es-${INSTANCE_NAME}'
+
+    - kind: Service
+      apiVersion: v1
+      metadata:
+        name: 'es-transport-${INSTANCE_NAME}'
+        labels:
+          name: '${INSTANCE_NAME}'
+          component: elasticsearch
+      spec:
+        ports:
+          - name: es-transport
+            protocol: TCP
+            port: 9300
+            targetPort: 9300
+        selector:
+          name: 'es-${INSTANCE_NAME}'
+
+    #---------------------------------------------------------------------------------
+    - kind: Route
+      apiVersion: v1
+      metadata:
+        name: 'es-${INSTANCE_NAME}'
+        annotations:
+          description: "Route for ${INSTANCE_NAME} Elasticsearch HTTP API"
+        labels:
+          name: '${INSTANCE_NAME}'
+          component: elasticsearch
+      spec:
+        host: '${APPLICATION_DOMAIN}'
+        to:
+          kind: Service
+          name: 'es-http-${INSTANCE_NAME}'
+
+  #---------------------------------------------------------------------------------
+    - kind: PersistentVolumeClaim
+      apiVersion: v1
+      metadata:
+        name: 'es-${INSTANCE_NAME}-1'
+        labels:
+          name: 'es-${INSTANCE_NAME}'
+          component: elasticsearch
+      spec:
+        accessModes:
+          - ReadWriteOnce
+        resources:
+          requests:
+            storage: '${VOLUME_CAPACITY}'
+
+    - kind: DeploymentConfig
+      apiVersion: v1
+      metadata:
+        name: 'es-${INSTANCE_NAME}'
+        labels:
+          name: '${INSTANCE_NAME}'
+          component: elasticsearch
+      spec:
+        strategy:
+          type: Recreate
+        triggers:
+          - type: ConfigChange
+        replicas: 1
+        selector:
+          name: 'es-${INSTANCE_NAME}'
+          component: elasticsearch
+        template:
+          metadata:
+            labels:
+              name: 'es-${INSTANCE_NAME}'
+              component: elasticsearch
+          spec:
+            serviceAccount: quantezza
+            containers:
+              - name: elasticsearch
+                image: gcr.io/quantiply-edge-cloud/elasticsearch-1.7.2:v1
+                securityContext:
+                  runAsUser: 0
+                  privileged: false
+                ports:
+                  - name: "http"
+                    containerPort: 9200
+                    protocol: TCP
+                  - name: "transport"
+                    containerPort: 9300
+                    protocol: TCP
+                env:
+                  - name: "KUBERNETES_TRUST_CERT"
+                    value: "true"
+                  - name: KUBERNETES_CA_CERTIFICATE_FILE
+                    value: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
+                  - name: "DISCOVERY_SERVICE"
+                    value: 'svc-transport-${INSTANCE_NAME}'
+                  - name: NAMESPACE
+                    valueFrom:
+                      fieldRef:
+                        fieldPath: metadata.namespace
+                volumeMounts:
+                  - name: 'data-${INSTANCE_NAME}'
+                    mountPath: /data
+                terminationMessagePath: /dev/termination-log
+                imagePullPolicy: IfNotPresent
+
+            volumes:
+              - name: 'data-${INSTANCE_NAME}'
+                persistentVolumeClaim:
+                  claimName: 'es-${INSTANCE_NAME}-1'
+            restartPolicy: Always
+            dnsPolicy: ClusterFirst
+
+parameters:
+  - name: INSTANCE_NAME
+    description: Application instance name
+    generate: expression
+    from: '[a-z]{5}'
+    required: true
+  - name: APPLICATION_DOMAIN
+    description: "The exposed hostname that will route to the Elasticsearch cluster, if left blank a value will be defaulted."
+    value: ""
+  - name: VOLUME_CAPACITY
+    description: 'Volume space available for data, e.g. 512Mi, 2Gi'
+    value: 512Mi
+    required: true
+labels:
+  template: elasticsearch-ephemeral-template

@@ -1,0 +1,16 @@
+# https://docs.openshift.org/latest/dev_guide/quota.html
+
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: quota
+spec:
+  hard:
+    cpu: "20"
+    memory: 40Gi
+    persistentvolumeclaims: "10"
+    pods: "30"
+    replicationcontrollers: "20"
+    resourcequotas: "1"
+    secrets: "1000"
+    services: "500"

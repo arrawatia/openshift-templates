@@ -1,0 +1,21 @@
+# https://docs.openshift.org/latest/admin_guide/overcommit.html#reserving-resources-for-system-processes
+# If you want to explicitly reserve resources for non-Pod processes, you can create a resource-reserver
+# pod that does nothing but reserve capacity from being scheduled to on the node by the cluster.
+# Place the file in the node config directory, i.e. --config=DIR location. On start of the node, the node
+# agent will launch the specified container and the remaining capacity for the scheduler to place cluster
+# pods will adjust accordingly.
+
+
+
+apiVersion: v1
+kind: Pod
+metadata:
+  name: resource-reserver
+spec:
+  containers:
+  - name: sleep-forever
+    image: gcr.io/google_containers/pause:0.8.0
+    resources:
+      limits: # The amount of cpu you would like to reserve on a node for host level daemons unknown to the cluster.
+        cpu: 100m
+        memory: 150Mi
